@@ -969,8 +969,6 @@ void awd::on_stop_button_clicked()
     command[6] = 0x00;
     command[7] = checkSumm(command);
 
-    //ui->speed_spinBox->setValue(0);
-
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
     ui->speed_spinBox->setValue(0);
 
@@ -1021,18 +1019,29 @@ void awd::plot_settings()
 void awd::on_btn_clear_clicked()
 {
     //clearData
+    ui->speed_checkBox->setChecked(0);
+    ui->A_vx_1_checkBox->setChecked(0);
+    ui->A_vx_2_checkBox->setChecked(0);
+
     qv_x.clear();
     qv_y.clear();
+
     qavx1_x.clear();
     qavx1_y.clear();
+
     qavx2_x.clear();
     qavx2_y.clear();
     // plot
     ui->plot->graph(0)->setData(qv_x, qv_y);
     ui->plot->graph(1)->setData(qavx1_x, qavx1_y);
     ui->plot->graph(1)->setData(qavx2_x, qavx2_y);
+
     ui->plot->replot();
     ui->plot->update();
+
+    ui->speed_checkBox->setChecked(1);
+    ui->A_vx_1_checkBox->setChecked(1);
+    ui->A_vx_2_checkBox->setChecked(1);
 }
 
 void awd::writeData(const QByteArray &data)
@@ -1279,9 +1288,6 @@ void awd::on_spinBox_period_editingFinished()
 
 void awd::on_export_button_clicked()
 {
-    //QString filter = "AllFile (*.*) ;; Text File (*.txt)";
-    //QString file_name = QFileDialog::getOpenFileName(this,  "opena file", "С:://", filter);
-    //QFile file(file_name);
 
     QFile file(".//graph_value.txt");
 
@@ -1322,34 +1328,6 @@ void awd::on_export_button_clicked()
 
 }
 
-/*
-void awd::on_spinBox_address_editingFinished()
-{
-    command[0] = ui->spinBox_address->value();
-    //command[0] = ui->address_edit
-
-    qDebug() << "adress spin box: " << command[0];
-
-    command[1] = 0xf0;
-    command[2] = 0x00;
-    command[3] = 0x00;
-    command[4] = 0x00;
-    command[5] = 0x00;
-    command[6] = 0x00;
-    command[7] = checkSumm(command);
-
-    writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-
-    if(exo)
-    {
-        //read_pid_params();// считать текущие коэффициенты с платы
-        read_All_current_params();// считать и вывести текущии значения параметров
-        ui->tabWidget->isEnabled();
-    }
-    exo = false;
-}
-*/
-
 void awd::on_address_edit_editingFinished()
 {
 
@@ -1370,9 +1348,13 @@ void awd::on_address_edit_editingFinished()
 
     if(exo)
     {
-        //read_pid_params();// считать текущие коэффициенты с платы
+        ui->write_label->setText("Загрузка параметров...");
         read_All_current_params();// считать и вывести текущии значения параметров
         ui->tabWidget->setEnabled(1);
+    }
+    else
+    {
+        ui->read_label->setText("Ошибка ввода");
     }
     exo = false;
 

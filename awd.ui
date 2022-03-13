@@ -3162,6 +3162,11 @@
               <bold>true</bold>
              </font>
             </property>
+            <property name="toolTip">
+             <string>Состояние входа
+&quot;Концевой выключатель&quot;
+&quot;Движение вперед&quot;</string>
+            </property>
             <property name="text">
              <string>StLimFrw  </string>
             </property>
@@ -3175,6 +3180,11 @@
               <weight>75</weight>
               <bold>true</bold>
              </font>
+            </property>
+            <property name="toolTip">
+             <string>Состояние входа
+&quot;Концевой выключатель&quot;
+&quot;Движение назад&quot; LRev</string>
             </property>
             <property name="text">
              <string>StLimRev </string>
@@ -3190,6 +3200,9 @@
               <bold>true</bold>
              </font>
             </property>
+            <property name="toolTip">
+             <string>Состояние входа &quot;Движение вперед&quot; Forw</string>
+            </property>
             <property name="text">
              <string>StinFrw </string>
             </property>
@@ -3203,6 +3216,9 @@
               <weight>75</weight>
               <bold>true</bold>
              </font>
+            </property>
+            <property name="toolTip">
+             <string>Состояние входа &quot;Движение назад&quot; Rev</string>
             </property>
             <property name="text">
              <string>StinRev </string>
@@ -3218,6 +3234,9 @@
               <bold>true</bold>
              </font>
             </property>
+            <property name="toolTip">
+             <string>Признак вращения двигателя</string>
+            </property>
             <property name="text">
              <string>StMotAct </string>
             </property>
@@ -3232,6 +3251,9 @@
               <bold>true</bold>
              </font>
             </property>
+            <property name="toolTip">
+             <string>Индикатор направления вращения</string>
+            </property>
             <property name="text">
              <string>StDirFrwRev</string>
             </property>
@@ -3245,6 +3267,10 @@
               <weight>75</weight>
               <bold>true</bold>
              </font>
+            </property>
+            <property name="toolTip">
+             <string>Индикатор максимального
+управляющего сигнала (ШИМ)</string>
             </property>
             <property name="text">
              <string>StMaxPWM </string>
@@ -3262,6 +3288,9 @@
               <weight>75</weight>
               <bold>true</bold>
              </font>
+            </property>
+            <property name="toolTip">
+             <string>Индикатор токовой защиты</string>
             </property>
             <property name="text">
              <string>StOverCur </string>

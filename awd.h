@@ -164,8 +164,6 @@ private slots:
 
     void on_export_button_clicked();
 
-    //void on_spinBox_address_editingFinished();
-
     void on_address_edit_editingFinished();
 
     void on_write_pid_clicked();
