@@ -14,11 +14,20 @@ awd::awd(QWidget *parent)
        {
            ui->portName->addItem(serialPortInfo.portName());
        }
-    //connect(ui->portName, &QComboBox::currentTextChanged, this, &awd::serial_port_properties);
 
 // параметры порта
     currentPortName = ui->portName->currentText();
-    serial_port_properties(currentPortName);
+
+    serial->setPortName(currentPortName);
+
+    serial->open(QIODevice::ReadWrite);
+    serial->setBaudRate(QSerialPort::Baud9600);
+    serial->setDataBits(QSerialPort::Data8);
+    serial->setParity(QSerialPort::NoParity);
+    serial->setStopBits(QSerialPort::OneStop);
+    serial->setFlowControl(QSerialPort::NoFlowControl);
+
+    qDebug() << "PORT: " << serial->portName();
 
     connect(ui->portName, &QComboBox::currentTextChanged, this, &awd::serial_port_properties);
 
@@ -36,21 +45,19 @@ awd::awd(QWidget *parent)
 // График
     plot_settings();
 
-    connect(ui->plot, &QCustomPlot::mouseMove, this, &awd::slotMousePress);
+    connect(ui->plot, &QCustomPlot::mouseMove, this, &awd::slotMouseMove);
 
     // Инициализируем трассировщик
     tracer = new QCPItemTracer(ui->plot);
-    tracer->setGraph(ui->plot->graph(0));
-    //tracer->setGraph(ui->plot->graph(1));
-    //tracer->setGraph(ui->plot->graph(2));
 
+    tracer->setGraph(ui->plot->graph(0));
 
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &awd::slot_for_new_point);// соединение для создания новой точки скорости
 
 
-    timer->start(2000);
-    ui->spinBox_period->setValue(2000);
+    timer->start(500);
+    ui->spinBox_period->setValue(500);
 
 }
 
@@ -105,7 +112,6 @@ unsigned char awd::checkSumm(const unsigned char array[8])
 
 void awd::command_formation(const QString &value,const int &param_num)
 {
-    //serial_port_properties();
 
     command[1] = 0x78;
     command[2] = param_num;
@@ -116,13 +122,10 @@ void awd::command_formation(const QString &value,const int &param_num)
     command[7] = checkSumm(command);
 
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-    //command[7] = 0x00;
 }
 
 void awd::command_formation(int param_num)
 {
-    //serial_port_properties();
-
     command[1] = 0x87;
     command[2] = param_num;
     command[3] = 0x00;
@@ -132,7 +135,6 @@ void awd::command_formation(int param_num)
     command[7] = checkSumm(command);
 
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-    //command[7] = 0x00;
 }
 
 void awd::set_param_26_items()
@@ -144,17 +146,7 @@ void awd::set_param_26_items()
     ui->param_new_value_26->addItem("8");
 }
 
-void awd::read_All_current_params()
-{
-    for(int i = 0; i <= 36; i++ ){
-        command_formation(i);
-        if(i == 5 || i == 6 || i==7 || i == 8 ||
-           i == 9 || i == 10 || i== 11 || i == 12 ||
-           i == 18 || i == 19 || i== 20 ){ }
-        else
-        param_current_value_array[i]->setText(QString::number(current_param_value[i]));
-    }
-}
+
 
 void awd::set_labels_array()
 {
@@ -222,43 +214,6 @@ void awd::set_labels_array()
 
 }
 
-void awd::read_pid_params()
-{
-    command[1] = 0x87;
-    command[2] = 0x0F;
-    command[3] = 0x00;
-    command[4] = (ui->Kp->value() >> 8) & 0xFF;
-    command[5] = ui->Kp->value() & 0xFF;
-    command[6] = 0x00;
-    command[7] = checkSumm(command); //вычисление контрольной суммы
-
-    writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-
-
-    command[1] = 0x87;
-    command[2] = 0x10;
-    command[3] = 0x00;
-    command[4] = (ui->Ki->value() >> 8) & 0xFF;
-    command[5] = ui->Ki->value() & 0xFF;
-    command[6] = 0x00;
-    command[7] = checkSumm(command);//вычисление контрольной суммы
-
-    writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-
-
-    command[1] = 0x87;
-    command[2] = 0x11;
-    command[3] = 0x00;
-    command[4] = (ui->Kd->value() >> 8) & 0xFF;
-    command[5] = ui->Kd->value() & 0xFF;
-    command[6] = 0x00;
-    command[7] = checkSumm(command);//вычисление контрольной суммы
-
-    writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-
-
-}
-
 void awd::set_mode_items()
 {
     ui->comboBox_mode->addItem("Стабилизация скор.по ЭДС");
@@ -278,9 +233,39 @@ void awd::set_mode_connections()
     connect(ui->SrcParam, &QCheckBox::stateChanged, this, &awd::change_state);
 }
 
+void awd::mode_read(const QByteArray &data)
+{
+    //Data1
+        if( ( data[4] & (char)0x40 ) == (char)0x40 ) ui->SkipLim->setChecked(1);
+        else ui->SkipLim->setChecked(0);
+
+        if( ( data[4] & (char)0x20 ) == (char)0x20 ) ui->LimDrop->setChecked(1);
+        else ui->LimDrop->setChecked(0);
+
+        if( ( data[4] & (char)0x16 ) == (char)0x16 ) ui->StopDrop->setChecked(1);
+        else ui->StopDrop->setChecked(0);
+
+        if( ( data[4] & (char)0x08 ) == (char)0x08 ) ui->IntrfEN->setChecked(1);
+        else ui->IntrfEN->setChecked(0);
+
+        if( ( data[4] & (char)0x04 ) == (char)0x04 ) ui->IntrfVal->setChecked(1);
+        else ui->IntrfVal->setChecked(0);
+
+        if( ( data[4] & (char)0x02 ) == (char)0x02 ) ui->IntrfDir->setChecked(1);
+        else ui->IntrfDir->setChecked(0);
+
+        if( ( data[4] & (char)0x01 ) == (char)0x01 ) ui->SrcParam->setChecked(1);
+        else ui->SrcParam->setChecked(0);
+    //Data0
+        if( ( data[5] & (char)0x00 ) == (char)0x00 ) ui->comboBox_mode->setCurrentText("Стабилизация скор.по ЭДС");
+        if( ( data[5] & (char)0x01 ) == (char)0x01 ) ui->comboBox_mode->setCurrentText("Стабилизация скор.по энкодеру");
+        if( ( data[5] & (char)0x02 ) == (char)0x02 ) ui->comboBox_mode->setCurrentText("Слежение за внешним сигналом");
+        if( ( data[5] & (char)0x03 ) == (char)0x03 ) ui->comboBox_mode->setCurrentText("Ограничение момента");
+
+}
+
 void awd::status_no_edit()
 {
-
     ui->StLimFrw_label->setStyleSheet("color: rgb(192,192,192)");
     ui->StLimRev_label->setStyleSheet("color: rgb(192,192,192)");
     ui->StinFrw_label->setStyleSheet("color: rgb(192,192,192)");
@@ -289,57 +274,49 @@ void awd::status_no_edit()
     ui->StDirFrwRev_label->setStyleSheet("color: rgb(192,192,192)");
     ui->StMaxPWM_label->setStyleSheet("color: rgb(192,192,192)");
     ui->StOverCur_label->setStyleSheet("color: rgb(192,192,192)");
-
-
 }
 
 void awd::status_read(const QByteArray &data)
 {
 
-    mode_status = data[6];
-
-    if(mode_status & 1) ui->StLimFrw_label->setStyleSheet("color: rgb(0,128,0)");
+    if( ( data[6] & (char)0x01 ) == (char)0x01 ) ui->StLimFrw_label->setStyleSheet("color: rgb(0,128,0)");
     else ui->StLimFrw_label->setStyleSheet("color: rgb(192,192,192)");
 
-    if(mode_status & 2) ui->StLimRev_label->setStyleSheet("color: rgb(0,128,0)");
+    if( ( data[6] & (char)0x02 ) == (char)0x02 ) ui->StLimRev_label->setStyleSheet("color: rgb(0,128,0)");
     else ui->StLimRev_label->setStyleSheet("color: rgb(192,192,192)");
 
-    if(mode_status & 4) ui->StinFrw_label->setStyleSheet("color: rgb(0,128,0)");
+    if( ( data[6] & (char)0x04 ) == (char)0x04 ) ui->StinFrw_label->setStyleSheet("color: rgb(0,128,0)");
     else ui->StinFrw_label->setStyleSheet("color: rgb(192,192,192)");
 
-    if(mode_status & 8) ui->StinRev_label->setStyleSheet("color: rgb(0,128,0)");
+    if( ( data[6] & (char)0x08 ) == (char)0x08 ) ui->StinRev_label->setStyleSheet("color: rgb(0,128,0)");
     else ui->StinRev_label->setStyleSheet("color: rgb(192,192,192)");
 
-    if(mode_status & 16) ui->StMotAct_label->setStyleSheet("color: rgb(0,128,0)");
+    if( ( data[6] & (char)0x10 ) == (char)0x10 ) ui->StMotAct_label->setStyleSheet("color: rgb(0,128,0)");
     else ui->StMotAct_label->setStyleSheet("color: rgb(192,192,192)");
 
-    if(mode_status & 32) ui->StDirFrwRev_label->setStyleSheet("color: rgb(0,128,0)");
+    if( ( data[6] & (char)0x20 ) == (char)0x20 ) ui->StDirFrwRev_label->setStyleSheet("color: rgb(0,128,0)");
     else ui->StDirFrwRev_label->setStyleSheet("color: rgb(192,192,192)");
 
-    if(mode_status & 64) ui->StMaxPWM_label->setStyleSheet("color: rgb(0,128,0)");
+    if( ( data[6] & (char)0x40 ) == (char)0x40 ) ui->StMaxPWM_label->setStyleSheet("color: rgb(0,128,0)");
     else ui->StMaxPWM_label->setStyleSheet("color: rgb(192,192,192)");
 
-    if(mode_status & 128) ui->StOverCur_label->setStyleSheet("color: rgb(0,128,0)");
+    if( ( data[6] & (char)0x80 ) == (char)0x80 ) ui->StOverCur_label->setStyleSheet("color: rgb(0,128,0)");
     else ui->StOverCur_label->setStyleSheet("color: rgb(192,192,192)");
-
-    mode_status = 0;
 
 }
 
 void awd::real_plot( const QByteArray &data )
 {
 
-    //static QTime time(QTime::currentTime());
-    //double key = time.elapsed()/1000.0;
+    static QTime time(QTime::currentTime());
+    double key = time.elapsed()/1000.0;
 
-    static QElapsedTimer timer;
-    double key = timer.elapsed() / 1000.0;
+    //static QElapsedTimer time;
+    //double key = time.elapsed() / 1000.0;
 
     static double lastPointKey = 0;
         if(key - lastPointKey > 0.002)
         {
-            //qv_x.append(key);
-
 
                if( data[2] == (char)0x00 )
               {
@@ -363,9 +340,6 @@ void awd::real_plot( const QByteArray &data )
                qv_y.append(setReadDataValue(data));
                qDebug() << "speed: " << qv_x << ":" << qv_y;
                ui->plot->graph(0)->setData(qv_x, qv_y);
-               //ui->plot->xAxis->setRange(qv_x.first(), qv_x.last());
-               //ui->plot->yAxis->setRange(*std::min_element(qv_y.begin(), qv_y.end()),
-               //                          *std::max_element(qv_y.begin(), qv_y.end()));
                 }
 
                if ( ui->speed_checkBox->isChecked() && !( ui->A_vx_1_checkBox->isChecked() ) && !( ui->A_vx_2_checkBox->isChecked() ) )
@@ -386,7 +360,8 @@ void awd::real_plot( const QByteArray &data )
                    ui->plot->yAxis->setRange(*std::min_element(qavx2_y.begin(), qavx2_y.end()),
                                              *std::max_element(qavx2_y.begin(), qavx2_y.end()));
                }
-               else if( ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && !( ui->A_vx_2_checkBox->isChecked() ) )
+               else if( ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && !( ui->A_vx_2_checkBox->isChecked() )
+                        && !qv_x.empty() && !qv_y.empty() && !qavx1_x.empty() && !qavx1_y.empty() )
                {
                    ui->plot->xAxis->setRange(qv_x.first() < qavx1_x.first() ? qv_x.first() : qavx1_x.first(), qv_x.last() > qavx1_x.last() ? qv_x.last() : qavx1_x.last());
                    ui->plot->yAxis->setRange(*std::min_element(qv_y.begin(), qv_y.end()) < *std::min_element(qavx1_y.begin(), qavx1_y.end()) ?
@@ -397,7 +372,8 @@ void awd::real_plot( const QByteArray &data )
 
                }
 ///
-               else if( ui->speed_checkBox->isChecked() && !ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked() )
+               else if( ui->speed_checkBox->isChecked() && !ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked()
+                        && !qv_x.empty() && !qv_y.empty() && !qavx2_x.empty() && !qavx2_y.empty() )
                {
                    ui->plot->xAxis->setRange(qv_x.first() < qavx2_x.first() ? qv_x.first() : qavx2_x.first(), qv_x.last() > qavx2_x.last() ? qv_x.last() : qavx2_x.last());
                    ui->plot->yAxis->setRange(*std::min_element(qv_y.begin(), qv_y.end()) < *std::min_element(qavx2_y.begin(), qavx2_y.end()) ?
@@ -408,7 +384,8 @@ void awd::real_plot( const QByteArray &data )
 
                }
 ///
-               else if( !ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked() )
+               else if( !ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked()
+                        && !qavx1_x.empty() && !qavx1_y.empty() && !qavx2_x.empty() && !qavx2_y.empty() )
                {
                    ui->plot->xAxis->setRange(qavx1_x.first() < qavx2_x.first() ? qavx1_x.first() : qavx2_x.first(), qavx1_x.last() > qavx2_x.last() ? qavx1_x.last() : qavx2_x.last());
                    ui->plot->yAxis->setRange(*std::min_element(qavx1_y.begin(), qavx1_y.end()) < *std::min_element(qavx2_y.begin(), qavx2_y.end()) ?
@@ -419,7 +396,8 @@ void awd::real_plot( const QByteArray &data )
 
                }
 ////
-               else if( ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked() )
+               else if( ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked()
+                       && !qv_x.empty() && !qv_y.empty() && !qavx1_x.empty() && !qavx1_y.empty() && !qavx2_x.empty() && !qavx2_y.empty() )
                {
                    ui->plot->xAxis->setRange(min_of_3(qv_x.first(), qavx1_x.first(), qavx2_x.first()),
                                              max_of_3(qv_x.last(), qavx1_x.last(), qavx2_x.last()));
@@ -433,6 +411,7 @@ void awd::real_plot( const QByteArray &data )
 
                }
 ////
+
             ui->plot->replot();
             ui->plot->update();
             lastPointKey = key;
@@ -454,7 +433,7 @@ void awd::slot_for_new_point()
         command[7] = checkSumm(command);
 
         writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-        //command[7] = 0x00;
+
     }
 
      if( ui->A_vx_2_checkBox->isChecked() )
@@ -468,7 +447,7 @@ void awd::slot_for_new_point()
         command[7] = checkSumm(command);
 
         writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-        //command[7] = 0x00;
+
     }
 
     if( ui->speed_checkBox->isChecked() )
@@ -482,9 +461,9 @@ void awd::slot_for_new_point()
         command[7] = checkSumm(command);
 
         writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-        //command[7] = 0x00;
+
     }
-    //else {}
+
 }
 
 void awd::chart_update_period(const int &value)
@@ -492,8 +471,7 @@ void awd::chart_update_period(const int &value)
     timer->start(value);
 }
 
-
-void awd::slotMousePress(QMouseEvent *event)
+void awd::slotMouseMove(QMouseEvent *event)
 {
     // Определение координаты X на графике, где был произведён клик мышью
     double coordX = ui->plot->xAxis->pixelToCoord(event->pos().x());
@@ -559,14 +537,19 @@ void awd::on_write_all_by_default_clicked()
 
 void awd::on_read_all_clicked()
 {
-    read_All_current_params();
+    for(int i = 0; i <= 36; i++ ){
+        command_formation(i);
+        if(i == 5 || i == 6 || i==7 || i == 8 ||
+           i == 9 || i == 10 || i== 11 || i == 12 ||
+           i == 18 || i == 19 || i== 20 ){ }
+        else
+        param_current_value_array[i]->setText(QString::number(current_param_value[i]));
+    }
 }
 
 void awd::on_save_to_file_clicked()
 {
-    //QString filter = "AllFile (*.*) ;; Text File (*.txt)";
-    //QString file_name = QFileDialog::getOpenFileName(this,  "opena file", "С:://", filter);
-    //QFile file(file_name);
+
     QFile file(".//params.txt");
 
     if(!file.open(QFile::WriteOnly | QFile::Text))
@@ -824,8 +807,6 @@ void awd::change_state()
 
 void awd::on_read_button_regime_clicked()
 {
-    //serial_port_properties();
-
     command[1] = 0x87;
     command[2] = 0x1c;
     command[3] = 0x00;
@@ -835,42 +816,51 @@ void awd::on_read_button_regime_clicked()
     command[7] = checkSumm(command);
 
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-    //command[7] = 0x00;
 }
 
 void awd::on_write_button_regime_clicked()
 {
-    //serial_port_properties();
+    //остановка режима перед изменением режима
+    command[1] = 0x4b;
+    command[2] = 0x0a;
+    command[3] = 0x00;
+    command[4] = 0x00;
+    command[5] = 0x00;
+    command[6] = 0x00;
+    command[7] = checkSumm(command);
+
+    writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
 
     command[1] = 0x78;
     command[2] = 0x1c;
     command[3] = 0x00;
 
 //Data1
-    if(ui->SkipLim->isChecked()) mode_data1 |= 64;
-    if(ui->LimDrop->isChecked()) mode_data1 |= 32;
-    if(ui->StopDrop->isChecked()) mode_data1 |= 16;
-    if(ui->IntrfEN->isChecked()) mode_data1 |= 8;
-    if(ui->IntrfVal->isChecked()) mode_data1 |= 4;
-    if(ui->IntrfDir->isChecked()) mode_data1 |= 2;
-    if(ui->SrcParam->isChecked()) mode_data1 |= 1;
+    if(ui->SkipLim->isChecked()) /*mode_data1 |= 64*/ command[4] |= 64;
+    if(ui->LimDrop->isChecked()) /*mode_data1 |= 32*/ command[4] |= 32;
+    if(ui->StopDrop->isChecked()) /*mode_data1 |= 16*/ command[4] |= 16;
+    if(ui->IntrfEN->isChecked()) /*mode_data1 |= 8*/ command[4] |= 8;
+    if(ui->IntrfVal->isChecked()) /*mode_data1 |= 4*/ command[4] |= 4;
+    if(ui->IntrfDir->isChecked()) /*mode_data1 |= 2*/ command[4] |= 2;
+    if(ui->SrcParam->isChecked()) /*mode_data1 |= 1*/ command[4] |= 1;
 //Data0
-    if(ui->comboBox_mode->currentText() == "Стабилизация скор.по ЭДС") mode_data0 |= 0;
-    if(ui->comboBox_mode->currentText() == "Стабилизация скор.по энкодеру") mode_data0 |= 1;
-    if(ui->comboBox_mode->currentText() == "Слежение за внешним сигналом")mode_data0 |= 2;
-    if(ui->comboBox_mode->currentText() == "Ограничение момента") mode_data0 |= 3;
+    if(ui->comboBox_mode->currentText() == "Стабилизация скор.по ЭДС") /*mode_data0 |= 0*/ command[5] |= 0;
+    if(ui->comboBox_mode->currentText() == "Стабилизация скор.по энкодеру") /*mode_data0 |= 1*/ command[5] |= 1;
+    if(ui->comboBox_mode->currentText() == "Слежение за внешним сигналом")/*mode_data0 |= 2*/ command[5] |= 2;
+    if(ui->comboBox_mode->currentText() == "Ограничение момента") /*mode_data0 |= 3*/ command[5] |= 3;
 
-    command[4] = mode_data1;
-    command[5] = mode_data0;
+    //command[4] = mode_data1;
+    //command[5] = mode_data0;
     command[6] = 0x00;
     command[7] = checkSumm(command);
 
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-    //command[7] = 0x00;
     ///////////////
 //обнуление для следующего запуска
-    mode_data0 = 0;
-    mode_data1 = 0;
+    //mode_data0 = 0;
+    //mode_data1 = 0;
+    command[4] = 0;
+    command[5] = 0;
 }
 
 void awd::on_stop_mode_button_clicked()
@@ -884,7 +874,6 @@ void awd::on_stop_mode_button_clicked()
     command[7] = checkSumm(command);
 
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-    //command[7] = 0x00;
 }
 
 void awd::on_start_tracking_clicked()
@@ -898,52 +887,7 @@ void awd::on_start_tracking_clicked()
     command[7] = checkSumm(command);
 
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-    //command[7] = 0x00;
 }
-
-/*
-void awd::on_Kp_valueChanged(int value)
-{
-    command[1] = 0x78;
-    command[2] = 0x0F;
-    command[3] = 0x00;
-    command[4] = (value >> 8) & 0xFF;
-    command[5] = value & 0xFF;
-    command[6] = 0x00;
-    command[7] = checkSumm(command); //вычисление контрольной суммы
-
-    writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-    //command[7] = 0x00;
-}
-
-void awd::on_Ki_valueChanged(int value)
-{
-    command[1] = 0x78;
-    command[2] = 0x10;
-    command[3] = 0x00;
-    command[4] = (value >> 8) & 0xFF;
-    command[5] = value & 0xFF;
-    command[6] = 0x00;
-    command[7] = checkSumm(command);//вычисление контрольной суммы
-
-    writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-    //command[7] = 0x00;
-}
-
-void awd::on_Kd_valueChanged(int value)
-{
-    command[1] = 0x78;
-    command[2] = 0x11;
-    command[3] = 0x00;
-    command[4] = (value >> 8) & 0xFF;
-    command[5] = value & 0xFF;
-    command[6] = 0x00;
-    command[7] = checkSumm(command);//вычисление контрольной суммы
-
-    writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-    //command[7] = 0x00;
-}
-*/
 
 void awd::on_speed_horizontalSlider_valueChanged(int value)
 {
@@ -956,7 +900,6 @@ void awd::on_speed_horizontalSlider_valueChanged(int value)
     command[7] = checkSumm(command);//вычисление контрольной суммы
 
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-    //command[7] = 0x00;
 }
 
 void awd::on_stop_button_clicked()
@@ -1005,15 +948,16 @@ void awd::plot_settings()
     ui->plot->graph(0)->setPen(QPen(QColor(0, 255, 127)));
     ui->plot->addGraph();
     ui->plot->graph(1)->setScatterStyle(QCPScatterStyle::ssDisc);
-    ui->plot->graph(1)->setPen(QPen(QColor(255, 0, 127)));
+    ui->plot->graph(1)->setPen(QPen(QColor(255, 0, 0)));
     ui->plot->addGraph();
     ui->plot->graph(2)->setScatterStyle(QCPScatterStyle::ssDisc);
-    ui->plot->graph(2)->setPen(QPen(QColor(255, 110, 40)));
+    ui->plot->graph(2)->setPen(QPen(QColor(100, 0, 170)));
 
     QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
-    timeTicker->setTimeFormat("%h:%m:%s");
+    timeTicker->setTimeFormat("%m:%s");
     ui->plot->xAxis->setTicker(timeTicker);
     ui->plot->axisRect()->setupFullAxesBox();
+
 }
 
 void awd::on_btn_clear_clicked()
@@ -1034,14 +978,11 @@ void awd::on_btn_clear_clicked()
     // plot
     ui->plot->graph(0)->setData(qv_x, qv_y);
     ui->plot->graph(1)->setData(qavx1_x, qavx1_y);
-    ui->plot->graph(1)->setData(qavx2_x, qavx2_y);
+    ui->plot->graph(2)->setData(qavx2_x, qavx2_y);
 
     ui->plot->replot();
     ui->plot->update();
 
-    ui->speed_checkBox->setChecked(1);
-    ui->A_vx_1_checkBox->setChecked(1);
-    ui->A_vx_2_checkBox->setChecked(1);
 }
 
 void awd::writeData(const QByteArray &data)
@@ -1086,14 +1027,17 @@ void awd::readData()
         data[3] == (char)0x57 && data[4] == (char)0x44 )
     {
       exo = true;
-
     }
 
 //Статус
+    //if(exo)
+//{
     if(ui->status_checkBox->isChecked())
     {
         status_read(data);
-    } else {
+    }
+
+     else {
         ui->StLimFrw_label->setStyleSheet("color: rgb(192,192,192)");
         ui->StLimRev_label->setStyleSheet("color: rgb(192,192,192)");
         ui->StinFrw_label->setStyleSheet("color: rgb(192,192,192)");
@@ -1102,9 +1046,13 @@ void awd::readData()
         ui->StDirFrwRev_label->setStyleSheet("color: rgb(192,192,192)");
         ui->StMaxPWM_label->setStyleSheet("color: rgb(192,192,192)");
         ui->StOverCur_label->setStyleSheet("color: rgb(192,192,192)");
-
     }
-
+//}
+//Режим
+    if( data[1] == (char)0x87 && data[2] == (char)0x1c )
+    {
+        mode_read(data);
+    }
 //График
     if(data[1] == (char)0x3c)
     {
@@ -1154,28 +1102,31 @@ void awd::readData()
            ui->param_new_value_14->setValue(setReadDataValue(data));
            current_param_value[14] = setReadDataValue(data);
        }
-       if(data[1] == (char)0x87 && data[2] == (char)0x0f)
+       if(data[1] == (char)0x87 && data[2] == (char)0x0f) // Kp
        {
            ui->param_current_value_15->setText(QString::number(setReadDataValue(data)));
            ui->param_new_value_15->setValue(setReadDataValue(data));
+
            ui->Kp->setValue(setReadDataValue(data));
-           ui->Kp_spinBox->setValue(setReadDataValue(data));
+
            current_param_value[15] = setReadDataValue(data);
        }
-       if(data[1] == (char)0x87 && data[2] == (char)0x10)
+       if(data[1] == (char)0x87 && data[2] == (char)0x10) // Ki
        {
            ui->param_current_value_16->setText(QString::number(setReadDataValue(data)));
            ui->param_new_value_16->setValue(setReadDataValue(data));
+
            ui->Ki->setValue(setReadDataValue(data));
-           ui->Ki_spinBox->setValue(setReadDataValue(data));
+
            current_param_value[16] = setReadDataValue(data);
        }
-       if(data[1] == (char)0x87 && data[2] == (char)0x11)
+       if(data[1] == (char)0x87 && data[2] == (char)0x11) // Kd
        {
            ui->param_current_value_17->setText(QString::number(setReadDataValue(data)));
            ui->param_new_value_17->setValue(setReadDataValue(data));
+
            ui->Kd->setValue(setReadDataValue(data));
-           ui->Kd_spinBox->setValue(setReadDataValue(data));
+
            current_param_value[17] = setReadDataValue(data);
        }
        if(data[1] == (char)0x87 && data[2] == (char)0x15)
@@ -1331,7 +1282,6 @@ void awd::on_export_button_clicked()
 void awd::on_address_edit_editingFinished()
 {
 
-
     command[0] = (ui->address_edit->text()).toInt();
 
     qDebug() << "adress spin box: " << command[0];
@@ -1348,17 +1298,18 @@ void awd::on_address_edit_editingFinished()
 
     if(exo)
     {
-        ui->write_label->setText("Загрузка параметров...");
-        read_All_current_params();// считать и вывести текущии значения параметров
         ui->tabWidget->setEnabled(1);
+        ui->tab_5->setEnabled(1);
+        ui->scrollArea_2->setEnabled(1);
+        ui->scrollAreaWidgetContents_2->setEnabled(1);
+
+        ui->address_edit->setEnabled(0);
     }
     else
     {
-        ui->read_label->setText("Ошибка ввода");
+        ui->read_label->setText("Ошибка!");
     }
     exo = false;
-
-    ui->address_edit->setEnabled(0);
 }
 
 
@@ -1400,7 +1351,38 @@ void awd::on_write_pid_clicked()
 
 void awd::on_read_pid_clicked()
 {
-    read_pid_params();
+
+    command[1] = 0x87;
+    command[2] = 0x0F;
+    command[3] = 0x00;
+    command[4] = 0x00;/*(ui->Kp->value() >> 8) & 0xFF;*/
+    command[5] = 0x00;/*ui->Kp->value() & 0xFF;*/
+    command[6] = 0x00;
+    command[7] = checkSumm(command); //вычисление контрольной суммы
+
+    writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
+
+
+    command[1] = 0x87;
+    command[2] = 0x10;
+    command[3] = 0x00;
+    command[4] = 0x00; /*(ui->Ki->value() >> 8) & 0xFF;*/
+    command[5] = 0x00; /*ui->Ki->value() & 0xFF;*/
+    command[6] = 0x00;
+    command[7] = checkSumm(command);//вычисление контрольной суммы
+
+    writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
+
+
+    command[1] = 0x87;
+    command[2] = 0x11;
+    command[3] = 0x00;
+    command[4] = 0x00; /*(ui->Kd->value() >> 8) & 0xFF;*/
+    command[5] = 0x00; /*ui->Kd->value() & 0xFF;*/
+    command[6] = 0x00;
+    command[7] = checkSumm(command);//вычисление контрольной суммы
+
+    writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
 }
 
 void awd::on_checkBox_select_all_clicked(bool checked)

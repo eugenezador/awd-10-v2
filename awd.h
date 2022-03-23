@@ -6,7 +6,6 @@
 #include<QSerialPort>
 #include<QSerialPortInfo>
 #include<QDebug>
-#include<QMessageBox>
 #include<QFile>
 #include<QTextStream>
 //#include<bitset>
@@ -58,10 +57,10 @@ public:
 
 
 // переменные для режимов
-    unsigned char mode_data1 = 0;
-    unsigned char mode_data0 = 0;
+    //unsigned char mode_data1 = 0;
+    //unsigned char mode_data0 = 0;
 
-    unsigned char mode_status = 0;
+    //unsigned char mode_status = 0;
 
 // Общие методы
     void serial_port_properties(const QString &text);
@@ -75,17 +74,16 @@ public:
 
     void set_param_26_items();// выбор значений параметра 26
 
-    void read_All_current_params();// считать и вывести текущии значения параметров
+    //void read_All_current_params();// считать и вывести текущии значения параметров
 
     void set_labels_array();
-
-    void read_pid_params();
-
 
 // Методы для режимов
     void set_mode_items();// Возможные режимы на выбор
 
     void set_mode_connections();// подача сигналов при изменении значений
+
+    void mode_read(const QByteArray &data);// выделяет из прочитанной команды значение режима
 
 // Методы для статуса
     void status_no_edit();// отключает возможность редактирования мышкой ; светлосерые буквы статуса при запуске
@@ -99,7 +97,7 @@ public:
 
     void chart_update_period(const int &value);
 
-    void slotMousePress(QMouseEvent * event);
+    void slotMouseMove(QMouseEvent * event);
 
     double max_of_3(double a, double b, double c);
 
@@ -183,11 +181,11 @@ private:
 
     QCPItemTracer *tracer;
 
-    QVector<double> qv_x, qv_y;//вектор скорости
+    QVector<double> qv_x , qv_y ;//вектор скорости
 
-    QVector<double> qavx1_x, qavx1_y;// вектор Aвх1
+    QVector<double> qavx1_x , qavx1_y ;// вектор Aвх1
 
-    QVector<double> qavx2_x, qavx2_y;// вектор Aвх2
+    QVector<double> qavx2_x , qavx2_y ;// вектор Aвх2
 
 };
 #endif // AWD_H
