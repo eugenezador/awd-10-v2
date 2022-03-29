@@ -37,7 +37,7 @@
          <enum>QTabWidget::North</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>2</number>
         </property>
         <property name="elideMode">
          <enum>Qt::ElideLeft</enum>
@@ -3376,6 +3376,9 @@
               </item>
               <item>
                <widget class="QSlider" name="speed_horizontalSlider">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -3527,6 +3530,9 @@
                 <property name="text">
                  <string>Скорость</string>
                 </property>
+                <property name="checked">
+                 <bool>false</bool>
+                </property>
                </widget>
               </item>
               <item row="0" column="1" colspan="4">
@@ -3568,6 +3574,9 @@
                 <property name="text">
                  <string>А.вх1</string>
                 </property>
+                <property name="checked">
+                 <bool>false</bool>
+                </property>
                </widget>
               </item>
               <item row="4" column="1">
@@ -3587,6 +3596,9 @@
                 </property>
                 <property name="text">
                  <string>А.вх2</string>
+                </property>
+                <property name="checked">
+                 <bool>false</bool>
                 </property>
                </widget>
               </item>
@@ -3917,38 +3929,6 @@
  <resources/>
  <connections>
   <connection>
-   <sender>speed_horizontalSlider</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>speed_spinBox</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>119</x>
-     <y>487</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>164</x>
-     <y>521</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>speed_spinBox</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>speed_horizontalSlider</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>189</x>
-     <y>521</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>56</x>
-     <y>487</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>Kp</sender>
    <signal>valueChanged(int)</signal>
    <receiver>Kp_spinBox</receiver>
@@ -3959,8 +3939,8 @@
      <y>137</y>
     </hint>
     <hint type="destinationlabel">
-     <x>59</x>
-     <y>370</y>
+     <x>74</x>
+     <y>365</y>
     </hint>
    </hints>
   </connection>
@@ -3976,7 +3956,7 @@
     </hint>
     <hint type="destinationlabel">
      <x>256</x>
-     <y>370</y>
+     <y>365</y>
     </hint>
    </hints>
   </connection>
@@ -3988,7 +3968,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>256</x>
-     <y>370</y>
+     <y>365</y>
     </hint>
     <hint type="destinationlabel">
      <x>206</x>
@@ -4003,8 +3983,8 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>90</x>
-     <y>370</y>
+     <x>93</x>
+     <y>365</y>
     </hint>
     <hint type="destinationlabel">
      <x>43</x>
@@ -4024,7 +4004,7 @@
     </hint>
     <hint type="destinationlabel">
      <x>420</x>
-     <y>370</y>
+     <y>365</y>
     </hint>
    </hints>
   </connection>
@@ -4036,7 +4016,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>420</x>
-     <y>370</y>
+     <y>365</y>
     </hint>
     <hint type="destinationlabel">
      <x>370</x>

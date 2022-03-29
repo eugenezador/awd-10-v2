@@ -399,14 +399,14 @@ void awd::real_plot( const QByteArray &data )
                else if( ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked()
                        && !qv_x.empty() && !qv_y.empty() && !qavx1_x.empty() && !qavx1_y.empty() && !qavx2_x.empty() && !qavx2_y.empty() )
                {
-                   ui->plot->xAxis->setRange(min_of_3(qv_x.first(), qavx1_x.first(), qavx2_x.first()),
-                                             max_of_3(qv_x.last(), qavx1_x.last(), qavx2_x.last()));
+                   ui->plot->xAxis->setRange(std::min(std::min(qv_x.first(), qavx1_x.first()), qavx2_x.first()),
+                                             std::max(std::max(qv_x.last(), qavx1_x.last()), qavx2_x.last()));
 
-                   ui->plot->yAxis->setRange(min_of_3(*std::min_element(qv_y.begin(), qv_y.end()),
-                                                      *std::min_element(qavx2_y.begin(), qavx2_y.end()),
+                   ui->plot->yAxis->setRange(std::min(std::min(*std::min_element(qv_y.begin(), qv_y.end()),
+                                                      *std::min_element(qavx2_y.begin(), qavx2_y.end())),
                                                       *std::min_element(qavx2_y.begin(), qavx2_y.end()) ),
-                                             max_of_3(*std::max_element(qv_y.begin(), qv_y.end()),
-                                                      *std::max_element(qavx1_y.begin(), qavx1_y.end()),
+                                             std::max(std::max( *std::max_element(qv_y.begin(), qv_y.end()),
+                                                      *std::max_element(qavx1_y.begin(), qavx1_y.end()) ),
                                                       *std::max_element(qavx2_y.begin(), qavx2_y.end()) ) );
 
                }
@@ -486,39 +486,6 @@ void awd::slotMouseMove(QMouseEvent *event)
     ui->plot->replot(); // Перерисовываем содержимое полотна графика
 }
 
-double awd::max_of_3(double a, double b, double c)
-{
-
-    if(a > b){
-        if (a > c){
-          return a;
-        }
-    }
-    else if( b > c ) {
-            return b;
-        }
-        else {
-            return c;
-        }
-    return 0;
-}
-
-double awd::min_of_3(double a, double b, double c)
-{
-    if(a < b){
-        if (a < c){
-          return a;
-        }
-    }
-    else if( b < c ) {
-            return b;
-        }
-        else {
-            return c;
-        }
-    return 0;
-}
-
 void awd::on_write_all_by_default_clicked()
 {
      qDebug() << "adress write all: " << command[0] ;
@@ -532,8 +499,6 @@ void awd::on_write_all_by_default_clicked()
         param_current_value_array[i]->setText(QString::number(by_default[i]));
     }
 }
-
-
 
 void awd::on_read_all_clicked()
 {
@@ -899,7 +864,24 @@ void awd::on_speed_horizontalSlider_valueChanged(int value)
     command[6] = 0x00;
     command[7] = checkSumm(command);//вычисление контрольной суммы
 
+    ui->speed_spinBox->setValue(value);
+
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
+}
+
+void awd::on_speed_spinBox_editingFinished()
+{
+    command[1] = 0x4b;
+    command[2] = 0x08;
+    command[3] = 0x00;
+    command[4] = (ui->speed_spinBox->value() >> 8) & 0xFF;
+    command[5] = ui->speed_spinBox->value() & 0xFF;
+    command[6] = 0x00;
+    command[7] = checkSumm(command);//вычисление контрольной суммы
+
+    writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
+
+    ui->speed_horizontalSlider->setValue(ui->speed_spinBox->value());
 }
 
 void awd::on_stop_button_clicked()
@@ -914,6 +896,7 @@ void awd::on_stop_button_clicked()
 
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
     ui->speed_spinBox->setValue(0);
+    ui->speed_horizontalSlider->setValue(0);
 
     ui->A_vx_1_checkBox->setChecked(0);
     ui->A_vx_2_checkBox->setChecked(0);
@@ -944,13 +927,13 @@ void awd::plot_settings()
     ui->plot->setInteraction(QCP::iRangeZoom, true);// взвимодействие перетаскивания графика
 
     ui->plot->addGraph();
-    ui->plot->graph(0)->setScatterStyle(QCPScatterStyle::ssDisc);
+    //ui->plot->graph(0)->setScatterStyle(QCPScatterStyle::ssDisc);
     ui->plot->graph(0)->setPen(QPen(QColor(0, 255, 127)));
     ui->plot->addGraph();
-    ui->plot->graph(1)->setScatterStyle(QCPScatterStyle::ssDisc);
+    //ui->plot->graph(1)->setScatterStyle(QCPScatterStyle::ssDisc);
     ui->plot->graph(1)->setPen(QPen(QColor(255, 0, 0)));
     ui->plot->addGraph();
-    ui->plot->graph(2)->setScatterStyle(QCPScatterStyle::ssDisc);
+    //ui->plot->graph(2)->setScatterStyle(QCPScatterStyle::ssDisc);
     ui->plot->graph(2)->setPen(QPen(QColor(100, 0, 170)));
 
     QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
@@ -1015,10 +998,12 @@ void awd::readData()
     QByteArray data;
     if(serial->isReadable())
     {
-       while (serial->waitForReadyRead(reply_time))
+       while ( serial->waitForReadyRead(reply_time) )
        {
            // результат чтения накапливается в переменную data
            data.append(serial->readAll());
+
+           if( data.size() == 8 ) break;
        }
        qDebug() << "read: " << data;
 
@@ -1249,10 +1234,32 @@ void awd::on_export_button_clicked()
 
     QTextStream out(&file);
 
-//
-    out << "ADC_1\t\n"
-        << "Time\t" << "Value\t\n";
 
+    out << "ADC_1\t\t" << "ADC_2\t\t" << "Speed\t\n";
+    out << "Time\t" << "Value\t" << "Time\t" << "Value\t" << "Time\t" << "Value\t\n";
+
+    for(int i = 0; i < std::max(std::max(qavx1_x.size(), qavx2_x.size()), qv_x.size()); i++)
+    {
+       if( i < qavx1_x.size() ){
+           out << qavx1_x[i] << "\t  " << qavx1_y[i] << "\t";
+       }
+       else out <<"\t\t";
+
+       if( i < qavx2_x.size() ){
+           out << qavx2_x[i] << "\t  " << qavx2_y[i] << "\t";
+       }
+       else out <<"\t\t";
+
+       if( i < qv_x.size() ){
+           out << qv_x[i] << "\t  " << qv_y[i] << "\t\n";
+       }
+       else out <<"\n";
+    }
+
+
+
+/*
+//
     for (int i = 0; i < qavx1_x.size(); i++ )
     {
         out << qavx1_x[i] << "\t  " << qavx1_y[i] << "\t\n";
@@ -1274,6 +1281,9 @@ void awd::on_export_button_clicked()
     {
         out << qv_x[i] << "\t  " << qv_y[i] << "\t\n";
     }
+*/
+
+
     file.flush();
     file.close();
 
@@ -1302,6 +1312,7 @@ void awd::on_address_edit_editingFinished()
         ui->tab_5->setEnabled(1);
         ui->scrollArea_2->setEnabled(1);
         ui->scrollAreaWidgetContents_2->setEnabled(1);
+        ui->speed_horizontalSlider->setEnabled(1);
 
         ui->address_edit->setEnabled(0);
     }
@@ -1452,4 +1463,3 @@ void awd::on_checkBox_select_all_clicked(bool checked)
     }
 
 }
-

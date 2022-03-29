@@ -99,11 +99,6 @@ public:
 
     void slotMouseMove(QMouseEvent * event);
 
-    double max_of_3(double a, double b, double c);
-
-    double min_of_3(double a, double b, double c);
-
-
 private slots:
 // Параметры
 
@@ -137,6 +132,8 @@ private slots:
     //void on_Kd_valueChanged(int value);
 
     void on_speed_horizontalSlider_valueChanged(int value);
+
+    void on_speed_spinBox_editingFinished();
 
     void on_stop_button_clicked();
 
