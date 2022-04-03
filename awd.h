@@ -5,10 +5,8 @@
 #include<QTimer>
 #include<QSerialPort>
 #include<QSerialPortInfo>
-#include<QDebug>
 #include<QFile>
 #include<QTextStream>
-//#include<bitset>
 #include<qcustomplot.h>
 
 
@@ -25,6 +23,8 @@ public:
     ~awd();
 
     bool exo = false;
+
+    bool track_chart = false;
 
     unsigned char adress = '\x05';
 
@@ -56,12 +56,6 @@ public:
     unsigned int current_param_value[38] = {};
 
 
-// переменные для режимов
-    //unsigned char mode_data1 = 0;
-    //unsigned char mode_data0 = 0;
-
-    //unsigned char mode_status = 0;
-
 // Общие методы
     void serial_port_properties(const QString &text);
 
@@ -74,7 +68,6 @@ public:
 
     void set_param_26_items();// выбор значений параметра 26
 
-    //void read_All_current_params();// считать и вывести текущии значения параметров
 
     void set_labels_array();
 
@@ -178,11 +171,15 @@ private:
 
     QCPItemTracer *tracer;
 
-    QVector<double> qv_x , qv_y ;//вектор скорости
+    QVector<double> qv_x = {0} , qv_y ;//вектор скорости
 
-    QVector<double> qavx1_x , qavx1_y ;// вектор Aвх1
+    QVector<double> qavx1_x = {0} , qavx1_y ;// вектор Aвх1
 
-    QVector<double> qavx2_x , qavx2_y ;// вектор Aвх2
+    QVector<double> qavx2_x = {0} , qavx2_y ;// вектор Aвх2
+
+    std::map<double, QVector<double>> graph_value;
+
+    QVector<double> values = {0,0,0};
 
 };
 #endif // AWD_H

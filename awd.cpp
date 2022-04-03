@@ -56,8 +56,8 @@ awd::awd(QWidget *parent)
     connect(timer, &QTimer::timeout, this, &awd::slot_for_new_point);// соединение для создания новой точки скорости
 
 
-    timer->start(500);
-    ui->spinBox_period->setValue(500);
+    timer->start(300);
+    ui->spinBox_period->setValue(300);
 
 }
 
@@ -315,99 +315,118 @@ void awd::real_plot( const QByteArray &data )
     //double key = time.elapsed() / 1000.0;
 
     static double lastPointKey = 0;
+
         if(key - lastPointKey > 0.002)
         {
 
                if( data[2] == (char)0x00 )
               {
-              qavx1_x.append(key);
-              qavx1_y.append(setReadDataValue(data));
-              qDebug() << "Avx1: " << qavx1_x << ":" << qavx1_y;
-              ui->plot->graph(1)->setData(qavx1_x, qavx1_y);
+                  qavx1_x.append(key);
+                  qavx1_y.append(setReadDataValue(data));
+                  //qDebug() << "Avx1: " << qavx1_x << ":" << qavx1_y;
+                  ui->plot->graph(1)->setData(qavx1_x, qavx1_y);
+
+
+                  //qavx1_x.append(key);
+                  values[0] = setReadDataValue(data);
+                  //ui->plot->graph(1)->addData(key, setReadDataValue(data));
               }
 
                if( data[2] == (char)0x01 )
                {
-              qavx2_x.append(key);
-              qavx2_y.append(setReadDataValue(data));
-              qDebug() << "Avx2: " << qavx2_x << " : " << qavx2_y;
-              ui->plot->graph(2)->setData(qavx2_x, qavx2_y);
+                   qavx2_x.append(key);
+                   qavx2_y.append(setReadDataValue(data));
+                   //qDebug() << "Avx2: " << qavx2_x << " : " << qavx2_y;
+                   ui->plot->graph(2)->setData(qavx2_x, qavx2_y);
+
+
+                   //qavx2_x.append(key);
+                   values[1] = setReadDataValue(data);
+                   //ui->plot->graph(2)->addData(key, setReadDataValue(data));
                }
 
                if( data[2] == (char)0x05 )
-                {
-               qv_x.append(key);
-               qv_y.append(setReadDataValue(data));
-               qDebug() << "speed: " << qv_x << ":" << qv_y;
-               ui->plot->graph(0)->setData(qv_x, qv_y);
-                }
+               {
+                   qv_x.append(key);
+                   qv_y.append(setReadDataValue(data));
+                   //qDebug() << "speed: " << qv_x << ":" << qv_y;
+                   ui->plot->graph(0)->setData(qv_x, qv_y);
+
+
+                   //qv_x.append(key);
+                   values[2] = setReadDataValue(data);
+                   //ui->plot->graph(2)->addData(key, setReadDataValue(data));
+               }
+
+
+
 
                if ( ui->speed_checkBox->isChecked() && !( ui->A_vx_1_checkBox->isChecked() ) && !( ui->A_vx_2_checkBox->isChecked() ) )
                {
-                   ui->plot->xAxis->setRange(qv_x.first(), qv_x.last());
-                   ui->plot->yAxis->setRange(*std::min_element(qv_y.begin(), qv_y.end()),
-                                             *std::max_element(qv_y.begin(), qv_y.end()));
+                   ui->plot->xAxis->setRange(qv_x.first() - 0.25, qv_x.last() + 0.25);
+                   ui->plot->yAxis->setRange(*std::min_element(qv_y.begin(), qv_y.end()) - 0.25,
+                                             *std::max_element(qv_y.begin(), qv_y.end()) + 0.25);
                }
                else if ( !ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && !( ui->A_vx_2_checkBox->isChecked() ) )
                {
-                   ui->plot->xAxis->setRange(qavx1_x.first(), qavx1_x.last());
-                   ui->plot->yAxis->setRange(*std::min_element(qavx1_y.begin(), qavx1_y.end()),
-                                             *std::max_element(qavx1_y.begin(), qavx1_y.end()));
+                   ui->plot->xAxis->setRange(qavx1_x.first() - 0.25, qavx1_x.last() + 0.25);
+                   ui->plot->yAxis->setRange(*std::min_element(qavx1_y.begin(), qavx1_y.end()) - 0.25,
+                                             *std::max_element(qavx1_y.begin(), qavx1_y.end()) + 0.25);
                }
                else if ( !ui->speed_checkBox->isChecked() && !ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked() )
                {
-                   ui->plot->xAxis->setRange(qavx2_x.first(), qavx2_x.last());
-                   ui->plot->yAxis->setRange(*std::min_element(qavx2_y.begin(), qavx2_y.end()),
-                                             *std::max_element(qavx2_y.begin(), qavx2_y.end()));
+                   ui->plot->xAxis->setRange(qavx2_x.first() - 0.25, qavx2_x.last() + 0.25);
+                   ui->plot->yAxis->setRange(*std::min_element(qavx2_y.begin(), qavx2_y.end()) - 0.25,
+                                             *std::max_element(qavx2_y.begin(), qavx2_y.end()) + 0.25);
                }
                else if( ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && !( ui->A_vx_2_checkBox->isChecked() )
                         && !qv_x.empty() && !qv_y.empty() && !qavx1_x.empty() && !qavx1_y.empty() )
                {
-                   ui->plot->xAxis->setRange(qv_x.first() < qavx1_x.first() ? qv_x.first() : qavx1_x.first(), qv_x.last() > qavx1_x.last() ? qv_x.last() : qavx1_x.last());
-                   ui->plot->yAxis->setRange(*std::min_element(qv_y.begin(), qv_y.end()) < *std::min_element(qavx1_y.begin(), qavx1_y.end()) ?
-                                             *std::min_element(qv_y.begin(), qv_y.end()) : *std::min_element(qavx1_y.begin(), qavx1_y.end()),
+                   ui->plot->xAxis->setRange( (qv_x.first() < qavx1_x.first() ? qv_x.first() : qavx1_x.first()) - 0.25, (qv_x.last() > qavx1_x.last() ? qv_x.last() : qavx1_x.last()) + 0.25);
+                   ui->plot->yAxis->setRange( (*std::min_element(qv_y.begin(), qv_y.end()) < *std::min_element(qavx1_y.begin(), qavx1_y.end()) ?
+                                             *std::min_element(qv_y.begin(), qv_y.end()) : *std::min_element(qavx1_y.begin(), qavx1_y.end()) ) - 0.25,
 
-                                             *std::max_element(qv_y.begin(), qv_y.end()) > *std::max_element(qavx1_y.begin(), qavx1_y.end()) ?
-                                             *std::max_element(qv_y.begin(), qv_y.end()) : *std::max_element(qavx1_y.begin(), qavx1_y.end()));
+                                             (*std::max_element(qv_y.begin(), qv_y.end()) > *std::max_element(qavx1_y.begin(), qavx1_y.end()) ?
+                                             *std::max_element(qv_y.begin(), qv_y.end()) : *std::max_element(qavx1_y.begin(), qavx1_y.end()) ) + 0.25);
 
                }
 ///
                else if( ui->speed_checkBox->isChecked() && !ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked()
                         && !qv_x.empty() && !qv_y.empty() && !qavx2_x.empty() && !qavx2_y.empty() )
                {
-                   ui->plot->xAxis->setRange(qv_x.first() < qavx2_x.first() ? qv_x.first() : qavx2_x.first(), qv_x.last() > qavx2_x.last() ? qv_x.last() : qavx2_x.last());
-                   ui->plot->yAxis->setRange(*std::min_element(qv_y.begin(), qv_y.end()) < *std::min_element(qavx2_y.begin(), qavx2_y.end()) ?
-                                             *std::min_element(qv_y.begin(), qv_y.end()) : *std::min_element(qavx2_y.begin(), qavx2_y.end()),
+                   ui->plot->xAxis->setRange( ( qv_x.first() < qavx2_x.first() ? qv_x.first() : qavx2_x.first() ) - 0.25, ( qv_x.last() > qavx2_x.last() ? qv_x.last() : qavx2_x.last() ) + 0.25);
+                   ui->plot->yAxis->setRange( ( *std::min_element(qv_y.begin(), qv_y.end()) < *std::min_element(qavx2_y.begin(), qavx2_y.end()) ?
+                                             *std::min_element(qv_y.begin(), qv_y.end()) : *std::min_element(qavx2_y.begin(), qavx2_y.end()) ) - 0.25,
 
-                                             *std::max_element(qv_y.begin(), qv_y.end()) > *std::max_element(qavx2_y.begin(), qavx2_y.end()) ?
-                                             *std::max_element(qv_y.begin(), qv_y.end()) : *std::max_element(qavx2_y.begin(), qavx2_y.end()));
+                                             (*std::max_element(qv_y.begin(), qv_y.end()) > *std::max_element(qavx2_y.begin(), qavx2_y.end()) ?
+                                             *std::max_element(qv_y.begin(), qv_y.end()) : *std::max_element(qavx2_y.begin(), qavx2_y.end()) ) + 0.25);
 
                }
 ///
                else if( !ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked()
                         && !qavx1_x.empty() && !qavx1_y.empty() && !qavx2_x.empty() && !qavx2_y.empty() )
                {
-                   ui->plot->xAxis->setRange(qavx1_x.first() < qavx2_x.first() ? qavx1_x.first() : qavx2_x.first(), qavx1_x.last() > qavx2_x.last() ? qavx1_x.last() : qavx2_x.last());
-                   ui->plot->yAxis->setRange(*std::min_element(qavx1_y.begin(), qavx1_y.end()) < *std::min_element(qavx2_y.begin(), qavx2_y.end()) ?
-                                             *std::min_element(qavx1_y.begin(), qavx1_y.end()) : *std::min_element(qavx2_y.begin(), qavx2_y.end()),
+                   ui->plot->xAxis->setRange( ( qavx1_x.first() < qavx2_x.first() ? qavx1_x.first() : qavx2_x.first()) - 0.25, ( qavx1_x.last() > qavx2_x.last() ? qavx1_x.last() : qavx2_x.last()) + 0.25);
+                   ui->plot->yAxis->setRange((*std::min_element(qavx1_y.begin(), qavx1_y.end()) < *std::min_element(qavx2_y.begin(), qavx2_y.end()) ?
+                                             *std::min_element(qavx1_y.begin(), qavx1_y.end()) : *std::min_element(qavx2_y.begin(), qavx2_y.end()) ) - 0.25,
 
-                                             *std::max_element(qavx1_y.begin(), qavx1_y.end()) > *std::max_element(qavx2_y.begin(), qavx2_y.end()) ?
-                                             *std::max_element(qavx1_y.begin(), qavx1_y.end()) : *std::max_element(qavx2_y.begin(), qavx2_y.end()));
+                                             (*std::max_element(qavx1_y.begin(), qavx1_y.end()) > *std::max_element(qavx2_y.begin(), qavx2_y.end()) ?
+                                             *std::max_element(qavx1_y.begin(), qavx1_y.end()) : *std::max_element(qavx2_y.begin(), qavx2_y.end())) + 0.25);
 
                }
 ////
                else if( ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked()
                        && !qv_x.empty() && !qv_y.empty() && !qavx1_x.empty() && !qavx1_y.empty() && !qavx2_x.empty() && !qavx2_y.empty() )
                {
-                   ui->plot->xAxis->setRange(std::min(std::min(qv_x.first(), qavx1_x.first()), qavx2_x.first()),
-                                             std::max(std::max(qv_x.last(), qavx1_x.last()), qavx2_x.last()));
+                   ui->plot->xAxis->setRange(std::min(std::min(qv_x.first(), qavx1_x.first()), qavx2_x.first()) - 0.25,
+                                             std::max(std::max(qv_x.last(), qavx1_x.last()), qavx2_x.last()) + 0.25);
 
                    ui->plot->yAxis->setRange(std::min(std::min(*std::min_element(qv_y.begin(), qv_y.end()),
                                                       *std::min_element(qavx2_y.begin(), qavx2_y.end())),
-                                                      *std::min_element(qavx2_y.begin(), qavx2_y.end()) ),
+                                                      *std::min_element(qavx2_y.begin(), qavx2_y.end()) ) - 0.25,
                                              std::max(std::max( *std::max_element(qv_y.begin(), qv_y.end()),
                                                       *std::max_element(qavx1_y.begin(), qavx1_y.end()) ),
-                                                      *std::max_element(qavx2_y.begin(), qavx2_y.end()) ) );
+                                                      *std::max_element(qavx2_y.begin(), qavx2_y.end()) ) + 0.25 );
 
                }
 ////
@@ -463,6 +482,49 @@ void awd::slot_for_new_point()
         writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
 
     }
+
+
+    // Собрать контейнер
+/*
+    if ( ui->speed_checkBox->isChecked() && !( ui->A_vx_1_checkBox->isChecked() ) && !( ui->A_vx_2_checkBox->isChecked() ) )
+    {
+       graph_value[qv_x.last()] = values;
+    }
+    else if ( !ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && !( ui->A_vx_2_checkBox->isChecked() ) )
+    {
+        graph_value[qavx1_x.last()] = values;
+    }
+    else if ( !ui->speed_checkBox->isChecked() && !ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked() )
+    {
+        graph_value[qavx2_x.last()] = values;
+    }
+    else if( ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && !( ui->A_vx_2_checkBox->isChecked() )
+             && !qv_x.empty() && !qv_y.empty() && !qavx1_x.empty() && !qavx1_y.empty() )
+    {
+        graph_value[std::max(qv_x.last(), qavx1_x.last())] = values;
+    }
+///
+    else if( ui->speed_checkBox->isChecked() && !ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked()
+             && !qv_x.empty() && !qv_y.empty() && !qavx2_x.empty() && !qavx2_y.empty() )
+    {
+        graph_value[std::max(qv_x.last(), qavx2_x.last())] = values;
+    }
+///
+    else if( !ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked()
+             && !qavx1_x.empty() && !qavx1_y.empty() && !qavx2_x.empty() && !qavx2_y.empty() )
+    {
+        graph_value[std::max( qavx1_x.last(), qavx2_x.last() )] = values;
+    }
+////
+    else if( ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked()
+            && !qv_x.empty() && !qv_y.empty() && !qavx1_x.empty() && !qavx1_y.empty() && !qavx2_x.empty() && !qavx2_y.empty() )
+    {
+        graph_value[std::max(qv_x.last(), qavx1_x.last(), qavx2_x.last())] = values;
+    }
+*/
+
+    graph_value[std::max(std::max( qv_x.last(), qavx1_x.last() ), qavx2_x.last())] = values;
+    values = {0,0,0};
 
 }
 
@@ -929,6 +991,7 @@ void awd::plot_settings()
     ui->plot->addGraph();
     //ui->plot->graph(0)->setScatterStyle(QCPScatterStyle::ssDisc);
     ui->plot->graph(0)->setPen(QPen(QColor(0, 255, 127)));
+
     ui->plot->addGraph();
     //ui->plot->graph(1)->setScatterStyle(QCPScatterStyle::ssDisc);
     ui->plot->graph(1)->setPen(QPen(QColor(255, 0, 0)));
@@ -1234,55 +1297,42 @@ void awd::on_export_button_clicked()
 
     QTextStream out(&file);
 
+    out << "Time\t\t" << "ADC_1\t\t" << "ADC_2\t\t" << "Speed\t\n";
 
+    for (const auto& item : graph_value)
+    {
+        out << item.first << "\t\t";
+        for (const double& stop : item.second)
+        {
+            QString str = QString::number(stop);
+            std::replace(str.begin(), str.end(), '.', ',');
+            out << str << "\t\t ";
+            //out << stop << "\t\t ";
+        }
+        out << "\t\n";
+    }
+
+/*
     out << "ADC_1\t\t" << "ADC_2\t\t" << "Speed\t\n";
-    out << "Time\t" << "Value\t" << "Time\t" << "Value\t" << "Time\t" << "Value\t\n";
 
     for(int i = 0; i < std::max(std::max(qavx1_x.size(), qavx2_x.size()), qv_x.size()); i++)
     {
        if( i < qavx1_x.size() ){
            out << qavx1_x[i] << "\t  " << qavx1_y[i] << "\t";
        }
-       else out <<"\t\t";
+       else out <<"0\t";
 
        if( i < qavx2_x.size() ){
            out << qavx2_x[i] << "\t  " << qavx2_y[i] << "\t";
        }
-       else out <<"\t\t";
+       else out <<"0\t";
 
        if( i < qv_x.size() ){
            out << qv_x[i] << "\t  " << qv_y[i] << "\t\n";
        }
        else out <<"\n";
     }
-
-
-
-/*
-//
-    for (int i = 0; i < qavx1_x.size(); i++ )
-    {
-        out << qavx1_x[i] << "\t  " << qavx1_y[i] << "\t\n";
-
-    }
-
-//
-    out << "\nADC_2\t\n"
-        << "Time\t" << "Value\t\n";
-    for (int i = 0; i < qavx2_x.size(); i++ )
-    {
-        out << qavx2_x[i] << "\t  " << qavx2_y[i] << "\t\n";
-    }
-
-//
-    out << "\nSpeed\t\n"
-        << "Time\t" << "Value\t\n";
-    for (int i = 0; i < qv_x.size(); i++ )
-    {
-        out << qv_x[i] << "\t  " << qv_y[i] << "\t\n";
-    }
 */
-
 
     file.flush();
     file.close();
