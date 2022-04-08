@@ -124,7 +124,7 @@ private slots:
 
     //void on_Kd_valueChanged(int value);
 
-    void on_speed_horizontalSlider_valueChanged(int value);
+    //void on_speed_horizontalSlider_valueChanged(int value);
 
     void on_speed_spinBox_editingFinished();
 
@@ -160,6 +160,8 @@ private slots:
 
     void on_checkBox_select_all_clicked(bool checked);
 
+    void speed_SliderValueChanged(int newPos);
+
 private:
     Ui::awd *ui;
 
@@ -171,11 +173,11 @@ private:
 
     QCPItemTracer *tracer;
 
-    QVector<double> qv_x = {0} , qv_y ;//вектор скорости
+    QVector<double> qv_x = {0} , qv_y; //вектор скорости
 
-    QVector<double> qavx1_x = {0} , qavx1_y ;// вектор Aвх1
+    QVector<double> qavx1_x = {0} , qavx1_y;// вектор Aвх1
 
-    QVector<double> qavx2_x = {0} , qavx2_y ;// вектор Aвх2
+    QVector<double> qavx2_x = {0} , qavx2_y;// вектор Aвх2
 
     std::map<double, QVector<double>> graph_value;
 

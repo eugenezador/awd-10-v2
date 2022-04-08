@@ -59,6 +59,10 @@ awd::awd(QWidget *parent)
     timer->start(300);
     ui->spinBox_period->setValue(300);
 
+
+
+    connect(ui->speed_horizontalSlider, &QSlider::valueChanged, this, &awd::speed_SliderValueChanged );
+
 }
 
 awd::~awd()
@@ -324,12 +328,12 @@ void awd::real_plot( const QByteArray &data )
                   qavx1_x.append(key);
                   qavx1_y.append(setReadDataValue(data));
                   //qDebug() << "Avx1: " << qavx1_x << ":" << qavx1_y;
-                  ui->plot->graph(1)->setData(qavx1_x, qavx1_y);
+                  //ui->plot->graph(1)->setData(qavx1_x, qavx1_y);
 
 
                   //qavx1_x.append(key);
                   values[0] = setReadDataValue(data);
-                  //ui->plot->graph(1)->addData(key, setReadDataValue(data));
+                  ui->plot->graph(1)->addData(key, setReadDataValue(data));
               }
 
                if( data[2] == (char)0x01 )
@@ -337,12 +341,12 @@ void awd::real_plot( const QByteArray &data )
                    qavx2_x.append(key);
                    qavx2_y.append(setReadDataValue(data));
                    //qDebug() << "Avx2: " << qavx2_x << " : " << qavx2_y;
-                   ui->plot->graph(2)->setData(qavx2_x, qavx2_y);
+                   //ui->plot->graph(2)->setData(qavx2_x, qavx2_y);
 
 
                    //qavx2_x.append(key);
                    values[1] = setReadDataValue(data);
-                   //ui->plot->graph(2)->addData(key, setReadDataValue(data));
+                   ui->plot->graph(2)->addData(key, setReadDataValue(data));
                }
 
                if( data[2] == (char)0x05 )
@@ -350,12 +354,12 @@ void awd::real_plot( const QByteArray &data )
                    qv_x.append(key);
                    qv_y.append(setReadDataValue(data));
                    //qDebug() << "speed: " << qv_x << ":" << qv_y;
-                   ui->plot->graph(0)->setData(qv_x, qv_y);
+                   //ui->plot->graph(0)->setData(qv_x, qv_y);
 
 
                    //qv_x.append(key);
                    values[2] = setReadDataValue(data);
-                   //ui->plot->graph(2)->addData(key, setReadDataValue(data));
+                   ui->plot->graph(2)->addData(key, setReadDataValue(data));
                }
 
 
@@ -916,6 +920,7 @@ void awd::on_start_tracking_clicked()
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
 }
 
+/*
 void awd::on_speed_horizontalSlider_valueChanged(int value)
 {
     command[1] = 0x4b;
@@ -930,6 +935,7 @@ void awd::on_speed_horizontalSlider_valueChanged(int value)
 
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
 }
+*/
 
 void awd::on_speed_spinBox_editingFinished()
 {
@@ -1512,4 +1518,37 @@ void awd::on_checkBox_select_all_clicked(bool checked)
         ui->checkBox_param_36->setChecked(0);
     }
 
+}
+
+void awd::speed_SliderValueChanged(int newPos)
+{
+        Qt::MouseButtons btns = QApplication::mouseButtons();
+        QPoint localMousePos = ui->speed_horizontalSlider->mapFromGlobal(QCursor::pos());
+        bool clickOnSlider = (btns & Qt::LeftButton) &&
+                             (localMousePos.x() >= 0 && localMousePos.y() >= 0 &&
+                              localMousePos.x() < ui->speed_horizontalSlider->size().width() &&
+                              localMousePos.y() < ui->speed_horizontalSlider->size().height());
+        if (clickOnSlider)
+        {
+            // Attention! The following works only for Horizontal, Left-to-right sliders
+            float posRatio = localMousePos.x() / (float )ui->speed_horizontalSlider->size().width();
+            int sliderRange = ui->speed_horizontalSlider->maximum() - ui->speed_horizontalSlider->minimum();
+            int sliderPosUnderMouse = ui->speed_horizontalSlider->minimum() + sliderRange * posRatio;
+            if (sliderPosUnderMouse != newPos)
+            {
+                ui->speed_horizontalSlider->setValue(sliderPosUnderMouse);
+                return;
+            }
+        }
+        command[1] = 0x4b;
+        command[2] = 0x08;
+        command[3] = 0x00;
+        command[4] = (newPos >> 8) & 0xFF;
+        command[5] = newPos & 0xFF;
+        command[6] = 0x00;
+        command[7] = checkSumm(command);//вычисление контрольной суммы
+
+        ui->speed_spinBox->setValue(newPos);
+
+        writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
 }
