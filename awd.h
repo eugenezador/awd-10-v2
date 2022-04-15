@@ -61,6 +61,8 @@ public:
 
     unsigned char checkSumm(const unsigned char array[8]); // функция вычисления контрольной суммы
 
+    void send_exo();//отправление эхо команды по таймеру
+
 // Методы для параметров
     void command_formation(const QString &value, const int &param_num);// для кнопки записать параметры по умолчанию
 
@@ -160,7 +162,9 @@ private slots:
 
     void on_checkBox_select_all_clicked(bool checked);
 
-    void speed_SliderValueChanged(int newPos);
+    void speed_SliderValueChanged(int value);
+
+    void on_start_stop_session_clicked();
 
 private:
     Ui::awd *ui;
@@ -169,7 +173,7 @@ private:
 
     QString currentPortName;// для записи предыдущего значения порта
 
-    QTimer *timer;
+    QTimer *timer, *exo_timer;
 
     QCPItemTracer *tracer;
 
@@ -182,6 +186,8 @@ private:
     std::map<double, QVector<double>> graph_value;
 
     QVector<double> values = {0,0,0};
+
+    bool chek = false;
 
 };
 #endif // AWD_H

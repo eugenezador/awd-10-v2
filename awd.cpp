@@ -63,11 +63,17 @@ awd::awd(QWidget *parent)
 
     connect(ui->speed_horizontalSlider, &QSlider::valueChanged, this, &awd::speed_SliderValueChanged );
 
+    //отправление эхо команды каждые 10 мс для постоянного чтения статуса если нет действий
+    exo_timer = new QTimer(this);
+    connect(exo_timer, &QTimer::timeout, this, &awd::send_exo);
+    exo_timer->start(10);
+
 }
 
 awd::~awd()
 {
     delete timer;
+    delete exo_timer;
     //delete tracer;
     serial->close();
     delete serial;
@@ -112,6 +118,19 @@ unsigned char awd::checkSumm(const unsigned char array[8])
         summ -= array[i];
     }
     return summ;
+}
+
+void awd::send_exo()
+{
+    command[1] = 0xf0;
+    command[2] = 0x00;
+    command[3] = 0x00;
+    command[4] = 0x00;
+    command[5] = 0x00;
+    command[6] = 0x00;
+    command[7] = checkSumm(command);
+
+    writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
 }
 
 void awd::command_formation(const QString &value,const int &param_num)
@@ -366,7 +385,7 @@ void awd::real_plot( const QByteArray &data )
 
 
                if ( ui->speed_checkBox->isChecked() && !( ui->A_vx_1_checkBox->isChecked() ) && !( ui->A_vx_2_checkBox->isChecked() ) )
-               {
+               { 
                    ui->plot->xAxis->setRange(qv_x.first() - 0.25, qv_x.last() + 0.25);
                    ui->plot->yAxis->setRange(*std::min_element(qv_y.begin(), qv_y.end()) - 0.25,
                                              *std::max_element(qv_y.begin(), qv_y.end()) + 0.25);
@@ -445,6 +464,9 @@ void awd::real_plot( const QByteArray &data )
 
 void awd::slot_for_new_point()
 {
+    if(chek)
+    {
+
     if( ui->A_vx_1_checkBox->isChecked() )
     {
         command[1] = 0x3c;
@@ -487,49 +509,10 @@ void awd::slot_for_new_point()
 
     }
 
-
-    // Собрать контейнер
-/*
-    if ( ui->speed_checkBox->isChecked() && !( ui->A_vx_1_checkBox->isChecked() ) && !( ui->A_vx_2_checkBox->isChecked() ) )
-    {
-       graph_value[qv_x.last()] = values;
-    }
-    else if ( !ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && !( ui->A_vx_2_checkBox->isChecked() ) )
-    {
-        graph_value[qavx1_x.last()] = values;
-    }
-    else if ( !ui->speed_checkBox->isChecked() && !ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked() )
-    {
-        graph_value[qavx2_x.last()] = values;
-    }
-    else if( ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && !( ui->A_vx_2_checkBox->isChecked() )
-             && !qv_x.empty() && !qv_y.empty() && !qavx1_x.empty() && !qavx1_y.empty() )
-    {
-        graph_value[std::max(qv_x.last(), qavx1_x.last())] = values;
-    }
-///
-    else if( ui->speed_checkBox->isChecked() && !ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked()
-             && !qv_x.empty() && !qv_y.empty() && !qavx2_x.empty() && !qavx2_y.empty() )
-    {
-        graph_value[std::max(qv_x.last(), qavx2_x.last())] = values;
-    }
-///
-    else if( !ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked()
-             && !qavx1_x.empty() && !qavx1_y.empty() && !qavx2_x.empty() && !qavx2_y.empty() )
-    {
-        graph_value[std::max( qavx1_x.last(), qavx2_x.last() )] = values;
-    }
-////
-    else if( ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked()
-            && !qv_x.empty() && !qv_y.empty() && !qavx1_x.empty() && !qavx1_y.empty() && !qavx2_x.empty() && !qavx2_y.empty() )
-    {
-        graph_value[std::max(qv_x.last(), qavx1_x.last(), qavx2_x.last())] = values;
-    }
-*/
-
     graph_value[std::max(std::max( qv_x.last(), qavx1_x.last() ), qavx2_x.last())] = values;
     values = {0,0,0};
 
+    }
 }
 
 void awd::chart_update_period(const int &value)
@@ -581,7 +564,8 @@ void awd::on_read_all_clicked()
 void awd::on_save_to_file_clicked()
 {
 
-    QFile file(".//params.txt");
+    //QFile file(".//params.txt");
+    QFile file(QFileDialog::getSaveFileName(this,  "Save file", "С:://", tr("Text files (*.txt)")));
 
     if(!file.open(QFile::WriteOnly | QFile::Text))
     {
@@ -966,9 +950,9 @@ void awd::on_stop_button_clicked()
     ui->speed_spinBox->setValue(0);
     ui->speed_horizontalSlider->setValue(0);
 
-    ui->A_vx_1_checkBox->setChecked(0);
-    ui->A_vx_2_checkBox->setChecked(0);
-    ui->speed_checkBox->setChecked(0);
+    //ui->A_vx_1_checkBox->setChecked(0);
+    //ui->A_vx_2_checkBox->setChecked(0);
+    //ui->speed_checkBox->setChecked(0);
 
     command[7] = 0x00;
 }
@@ -1294,11 +1278,12 @@ void awd::on_spinBox_period_editingFinished()
 void awd::on_export_button_clicked()
 {
 
-    QFile file(".//graph_value.txt");
+    //QFile file(".//graph_value.txt");
+    QFile file(QFileDialog::getSaveFileName(this,  "Save file", "С:://", tr("Text files (*.txt)")));
 
     if(!file.open(QFile::WriteOnly | QFile::Text))
     {
-        QMessageBox::warning(this, "title", "file not open");
+        //QMessageBox::warning(this, "title", "file not open");
     }
 
     QTextStream out(&file);
@@ -1369,6 +1354,7 @@ void awd::on_address_edit_editingFinished()
         ui->scrollArea_2->setEnabled(1);
         ui->scrollAreaWidgetContents_2->setEnabled(1);
         ui->speed_horizontalSlider->setEnabled(1);
+        ui->export_button->setEnabled(0);
 
         ui->address_edit->setEnabled(0);
     }
@@ -1520,7 +1506,7 @@ void awd::on_checkBox_select_all_clicked(bool checked)
 
 }
 
-void awd::speed_SliderValueChanged(int newPos)
+void awd::speed_SliderValueChanged(int value)
 {
         Qt::MouseButtons btns = QApplication::mouseButtons();
         QPoint localMousePos = ui->speed_horizontalSlider->mapFromGlobal(QCursor::pos());
@@ -1530,11 +1516,11 @@ void awd::speed_SliderValueChanged(int newPos)
                               localMousePos.y() < ui->speed_horizontalSlider->size().height());
         if (clickOnSlider)
         {
-            // Attention! The following works only for Horizontal, Left-to-right sliders
+
             float posRatio = localMousePos.x() / (float )ui->speed_horizontalSlider->size().width();
             int sliderRange = ui->speed_horizontalSlider->maximum() - ui->speed_horizontalSlider->minimum();
             int sliderPosUnderMouse = ui->speed_horizontalSlider->minimum() + sliderRange * posRatio;
-            if (sliderPosUnderMouse != newPos)
+            if (sliderPosUnderMouse != value)
             {
                 ui->speed_horizontalSlider->setValue(sliderPosUnderMouse);
                 return;
@@ -1543,12 +1529,36 @@ void awd::speed_SliderValueChanged(int newPos)
         command[1] = 0x4b;
         command[2] = 0x08;
         command[3] = 0x00;
-        command[4] = (newPos >> 8) & 0xFF;
-        command[5] = newPos & 0xFF;
+        command[4] = (value >> 8) & 0xFF;
+        command[5] = value & 0xFF;
         command[6] = 0x00;
         command[7] = checkSumm(command);//вычисление контрольной суммы
 
-        ui->speed_spinBox->setValue(newPos);
+        ui->speed_spinBox->setValue(value);
 
         writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
+}
+
+void awd::on_start_stop_session_clicked()
+{
+    if(chek){
+        // график идет
+        ui->start_stop_session->setText("Останоыка");
+        chek = true;
+
+        ui->A_vx_1_checkBox->setEnabled(0);
+        ui->A_vx_2_checkBox->setEnabled(0);
+        ui->speed_checkBox->setEnabled(0);
+        ui->export_button->setEnabled(1);
+    }
+    else{
+        // график остановка
+        ui->start_stop_session->setText("Запуск");
+        chek = false;
+
+        ui->A_vx_1_checkBox->setEnabled(1);
+        ui->A_vx_2_checkBox->setEnabled(1);
+        ui->speed_checkBox->setEnabled(1);
+        ui->export_button->setEnabled(0);
+    }
 }
