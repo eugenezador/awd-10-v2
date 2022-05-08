@@ -45,12 +45,16 @@ awd::awd(QWidget *parent)
 // График
     plot_settings();
 
-    connect(ui->plot, &QCustomPlot::mouseMove, this, &awd::slotMouseMove);
+    cursorText = new QCPItemText(ui->plot);
+    hLine = new QCPItemLine(ui->plot);
+    vLine = new QCPItemLine(ui->plot);
+
+    connect(ui->plot, &QCustomPlot::mouseMove, this, &awd::slotMouseMove);//отображение координат
 
     // Инициализируем трассировщик
-    tracer = new QCPItemTracer(ui->plot);
+    //tracer = new QCPItemTracer(ui->plot);
 
-    tracer->setGraph(ui->plot->graph(0));
+    //tracer->setGraph(ui->plot->graph(0));
 
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &awd::slot_for_new_point);// соединение для создания новой точки скорости
@@ -549,6 +553,8 @@ void awd::chart_update_period(const int &value)
 
 void awd::slotMouseMove(QMouseEvent *event)
 {
+
+/*
     // Определение координаты X на графике, где был произведён клик мышью
     double coordX = ui->plot->xAxis->pixelToCoord(event->pos().x());
 
@@ -560,6 +566,29 @@ void awd::slotMouseMove(QMouseEvent *event)
                               " y: " + QString::number(tracer->position->value()));
 
     ui->plot->replot(); // Перерисовываем содержимое полотна графика
+*/
+
+    QCustomPlot* customPlot = qobject_cast<QCustomPlot*>(sender());
+    double x = customPlot->xAxis->pixelToCoord(event->pos().x());
+    double y = customPlot->yAxis->pixelToCoord(event->pos().y());
+
+
+    hLine->setPen(Qt::DashDotLine);
+    hLine->start->setCoords(-QCPRange::maxRange, y);
+    hLine->end->setCoords(QCPRange::maxRange, y);
+
+    vLine->setPen(Qt::DashDotLine);
+    vLine->start->setCoords(x, -QCPRange::maxRange);
+    vLine->end->setCoords(x, QCPRange::maxRange);
+
+    cursorText->setText(QString("(%1, %2)").arg(x).arg(y));
+    cursorText->position->setCoords(QPointF(x, y));
+    cursorText->setFont(QFont(font().family(), 11));
+
+    QPointF pp = cursorText->position->pixelPosition() + QPointF(70.0, -15.0);
+    cursorText->position->setPixelPosition(pp);
+
+    customPlot->replot();
 }
 
 void awd::on_write_all_by_default_clicked()

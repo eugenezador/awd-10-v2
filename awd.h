@@ -24,7 +24,7 @@ public:
 
     bool exo = false;
 
-    bool track_chart = false;
+    //bool track_chart = false;
 
     unsigned char adress = '\x05';
 
@@ -171,6 +171,10 @@ private:
     QTimer *timer, *exo_timer;
 
     QCPItemTracer *tracer;
+
+    QCPItemText *cursorText;// отображение координат
+    QCPItemLine *hLine;// пунктирная линия на графике
+    QCPItemLine *vLine;// пунктирная линия на графике
 
     QVector<double> qv_x = {0}, qv_y ; //вектор скорости
 
