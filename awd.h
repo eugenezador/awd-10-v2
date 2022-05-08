@@ -120,13 +120,6 @@ private slots:
     void on_start_tracking_clicked();
 
 // Регулятор
-    //void on_Kp_valueChanged(int value);
-
-    //void on_Ki_valueChanged(int value);
-
-    //void on_Kd_valueChanged(int value);
-
-    //void on_speed_horizontalSlider_valueChanged(int value);
 
     void on_speed_spinBox_editingFinished();
 
@@ -164,7 +157,9 @@ private slots:
 
     void speed_SliderValueChanged(int value);
 
-    void on_start_stop_session_clicked();
+    void on_start_session_clicked();
+
+    void on_stop_session_clicked();
 
 private:
     Ui::awd *ui;
@@ -177,17 +172,19 @@ private:
 
     QCPItemTracer *tracer;
 
-    QVector<double> qv_x = {0} , qv_y; //вектор скорости
+    QVector<double> qv_x = {0}, qv_y ; //вектор скорости
 
-    QVector<double> qavx1_x = {0} , qavx1_y;// вектор Aвх1
+    QVector<double> qavx1_x = {0}, qavx1_y ;// вектор Aвх1
 
-    QVector<double> qavx2_x = {0} , qavx2_y;// вектор Aвх2
+    QVector<double> qavx2_x = {0}, qavx2_y ;// вектор Aвх2
 
     std::map<double, QVector<double>> graph_value;
 
     QVector<double> values = {0,0,0};
 
     bool chek = false;
+
+    QElapsedTimer time;
 
 };
 #endif // AWD_H

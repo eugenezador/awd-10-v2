@@ -11,7 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>awd</string>
+   <string>AWD 10</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../pepe/ELLAB.png</normaloff>../pepe/ELLAB.png</iconset>
   </property>
   <property name="accessibleDescription">
    <string extracomment="Введите адрес">Введите адрес</string>
@@ -3455,6 +3459,24 @@
             </item>
             <item>
              <layout class="QGridLayout" name="gridLayout_14">
+              <item row="1" column="4">
+               <widget class="QPushButton" name="btn_clear">
+                <property name="maximumSize">
+                 <size>
+                  <width>120</width>
+                  <height>70</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>14</pointsize>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Очистить</string>
+                </property>
+               </widget>
+              </item>
               <item row="4" column="2">
                <layout class="QHBoxLayout" name="horizontalLayout_10">
                 <item>
@@ -3538,29 +3560,6 @@
                 </property>
                </widget>
               </item>
-              <item row="1" column="1">
-               <widget class="QCheckBox" name="A_vx_1_checkBox">
-                <property name="font">
-                 <font>
-                  <pointsize>11</pointsize>
-                  <weight>75</weight>
-                  <bold>true</bold>
-                 </font>
-                </property>
-                <property name="layoutDirection">
-                 <enum>Qt::RightToLeft</enum>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">color:red</string>
-                </property>
-                <property name="text">
-                 <string>А.вх1</string>
-                </property>
-                <property name="checked">
-                 <bool>false</bool>
-                </property>
-               </widget>
-              </item>
               <item row="4" column="1">
                <widget class="QCheckBox" name="A_vx_2_checkBox">
                 <property name="font">
@@ -3584,7 +3583,56 @@
                 </property>
                </widget>
               </item>
+              <item row="1" column="3">
+               <widget class="QPushButton" name="start_session">
+                <property name="maximumSize">
+                 <size>
+                  <width>120</width>
+                  <height>70</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Запуск</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QCheckBox" name="A_vx_1_checkBox">
+                <property name="font">
+                 <font>
+                  <pointsize>11</pointsize>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="layoutDirection">
+                 <enum>Qt::RightToLeft</enum>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">color:red</string>
+                </property>
+                <property name="text">
+                 <string>А.вх1</string>
+                </property>
+                <property name="checked">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
               <item row="4" column="3">
+               <widget class="QPushButton" name="stop_session">
+                <property name="maximumSize">
+                 <size>
+                  <width>120</width>
+                  <height>70</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Остановка</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="4">
                <widget class="QPushButton" name="export_button">
                 <property name="maximumSize">
                  <size>
@@ -3594,31 +3642,6 @@
                 </property>
                 <property name="text">
                  <string>Экспорт</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="3">
-               <widget class="QPushButton" name="start_stop_session">
-                <property name="text">
-                 <string>Запуск</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="4">
-               <widget class="QPushButton" name="btn_clear">
-                <property name="maximumSize">
-                 <size>
-                  <width>120</width>
-                  <height>70</height>
-                 </size>
-                </property>
-                <property name="font">
-                 <font>
-                  <pointsize>14</pointsize>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Очистить</string>
                 </property>
                </widget>
               </item>
@@ -3637,7 +3660,7 @@
           <item>
            <widget class="QCheckBox" name="status_checkBox">
             <property name="enabled">
-             <bool>true</bool>
+             <bool>false</bool>
             </property>
             <property name="font">
              <font>

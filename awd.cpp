@@ -56,8 +56,8 @@ awd::awd(QWidget *parent)
     connect(timer, &QTimer::timeout, this, &awd::slot_for_new_point);// соединение для создания новой точки скорости
 
 
-    timer->start(300);
-    ui->spinBox_period->setValue(300);
+    timer->start(400);
+    ui->spinBox_period->setValue(400);
 
 
 
@@ -66,8 +66,9 @@ awd::awd(QWidget *parent)
     //отправление эхо команды каждые 10 мс для постоянного чтения статуса если нет действий
     exo_timer = new QTimer(this);
     connect(exo_timer, &QTimer::timeout, this, &awd::send_exo);
-    exo_timer->start(10);
+    exo_timer->start(400);
 
+    time.start();// старт времени графика
 }
 
 awd::~awd()
@@ -331,54 +332,42 @@ void awd::status_read(const QByteArray &data)
 void awd::real_plot( const QByteArray &data )
 {
 
-    static QTime time(QTime::currentTime());
-    double key = time.elapsed()/1000.0;
 
-    //static QElapsedTimer time;
-    //double key = time.elapsed() / 1000.0;
+    double key = time.elapsed() / 1000.0;
 
-    static double lastPointKey = 0;
+
+    double lastPointKey = 0;
 
         if(key - lastPointKey > 0.002)
         {
-
                if( data[2] == (char)0x00 )
               {
                   qavx1_x.append(key);
                   qavx1_y.append(setReadDataValue(data));
-                  //qDebug() << "Avx1: " << qavx1_x << ":" << qavx1_y;
-                  //ui->plot->graph(1)->setData(qavx1_x, qavx1_y);
+                  qDebug() << "Avx1: " << qavx1_x << ":" << qavx1_y;
+                  ui->plot->graph(1)->setData(qavx1_x, qavx1_y);
 
-
-                  //qavx1_x.append(key);
                   values[0] = setReadDataValue(data);
-                  ui->plot->graph(1)->addData(key, setReadDataValue(data));
               }
 
                if( data[2] == (char)0x01 )
                {
                    qavx2_x.append(key);
                    qavx2_y.append(setReadDataValue(data));
-                   //qDebug() << "Avx2: " << qavx2_x << " : " << qavx2_y;
-                   //ui->plot->graph(2)->setData(qavx2_x, qavx2_y);
+                   qDebug() << "Avx2: " << qavx2_x << " : " << qavx2_y;
+                   ui->plot->graph(2)->setData(qavx2_x, qavx2_y);
 
-
-                   //qavx2_x.append(key);
                    values[1] = setReadDataValue(data);
-                   ui->plot->graph(2)->addData(key, setReadDataValue(data));
                }
 
                if( data[2] == (char)0x05 )
                {
                    qv_x.append(key);
                    qv_y.append(setReadDataValue(data));
-                   //qDebug() << "speed: " << qv_x << ":" << qv_y;
-                   //ui->plot->graph(0)->setData(qv_x, qv_y);
+                   qDebug() << "speed: " << qv_x << ":" << qv_y;
+                   ui->plot->graph(0)->setData(qv_x, qv_y);
 
-
-                   //qv_x.append(key);
                    values[2] = setReadDataValue(data);
-                   ui->plot->graph(2)->addData(key, setReadDataValue(data));
                }
 
 
@@ -386,70 +375,70 @@ void awd::real_plot( const QByteArray &data )
 
                if ( ui->speed_checkBox->isChecked() && !( ui->A_vx_1_checkBox->isChecked() ) && !( ui->A_vx_2_checkBox->isChecked() ) )
                { 
-                   ui->plot->xAxis->setRange(qv_x.first() - 0.25, qv_x.last() + 0.25);
-                   ui->plot->yAxis->setRange(*std::min_element(qv_y.begin(), qv_y.end()) - 0.25,
-                                             *std::max_element(qv_y.begin(), qv_y.end()) + 0.25);
+                   ui->plot->xAxis->setRange(qv_x.first() - 2, qv_x.last() + 2);
+                   ui->plot->yAxis->setRange(*std::min_element(qv_y.begin(), qv_y.end()) - 2,
+                                             *std::max_element(qv_y.begin(), qv_y.end()) + 2);
                }
                else if ( !ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && !( ui->A_vx_2_checkBox->isChecked() ) )
                {
-                   ui->plot->xAxis->setRange(qavx1_x.first() - 0.25, qavx1_x.last() + 0.25);
-                   ui->plot->yAxis->setRange(*std::min_element(qavx1_y.begin(), qavx1_y.end()) - 0.25,
-                                             *std::max_element(qavx1_y.begin(), qavx1_y.end()) + 0.25);
+                   ui->plot->xAxis->setRange(qavx1_x.first() - 2, qavx1_x.last() + 2);
+                   ui->plot->yAxis->setRange(*std::min_element(qavx1_y.begin(), qavx1_y.end()) - 2,
+                                             *std::max_element(qavx1_y.begin(), qavx1_y.end()) + 2);
                }
                else if ( !ui->speed_checkBox->isChecked() && !ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked() )
                {
-                   ui->plot->xAxis->setRange(qavx2_x.first() - 0.25, qavx2_x.last() + 0.25);
-                   ui->plot->yAxis->setRange(*std::min_element(qavx2_y.begin(), qavx2_y.end()) - 0.25,
-                                             *std::max_element(qavx2_y.begin(), qavx2_y.end()) + 0.25);
+                   ui->plot->xAxis->setRange(qavx2_x.first() - 2, qavx2_x.last() + 2);
+                   ui->plot->yAxis->setRange(*std::min_element(qavx2_y.begin(), qavx2_y.end()) - 2,
+                                             *std::max_element(qavx2_y.begin(), qavx2_y.end()) + 2);
                }
                else if( ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && !( ui->A_vx_2_checkBox->isChecked() )
                         && !qv_x.empty() && !qv_y.empty() && !qavx1_x.empty() && !qavx1_y.empty() )
                {
-                   ui->plot->xAxis->setRange( (qv_x.first() < qavx1_x.first() ? qv_x.first() : qavx1_x.first()) - 0.25, (qv_x.last() > qavx1_x.last() ? qv_x.last() : qavx1_x.last()) + 0.25);
+                   ui->plot->xAxis->setRange( (qv_x.first() < qavx1_x.first() ? qv_x.first() : qavx1_x.first()) - 2, (qv_x.last() > qavx1_x.last() ? qv_x.last() : qavx1_x.last()) + 2);
                    ui->plot->yAxis->setRange( (*std::min_element(qv_y.begin(), qv_y.end()) < *std::min_element(qavx1_y.begin(), qavx1_y.end()) ?
-                                             *std::min_element(qv_y.begin(), qv_y.end()) : *std::min_element(qavx1_y.begin(), qavx1_y.end()) ) - 0.25,
+                                             *std::min_element(qv_y.begin(), qv_y.end()) : *std::min_element(qavx1_y.begin(), qavx1_y.end()) ) - 2,
 
                                              (*std::max_element(qv_y.begin(), qv_y.end()) > *std::max_element(qavx1_y.begin(), qavx1_y.end()) ?
-                                             *std::max_element(qv_y.begin(), qv_y.end()) : *std::max_element(qavx1_y.begin(), qavx1_y.end()) ) + 0.25);
+                                             *std::max_element(qv_y.begin(), qv_y.end()) : *std::max_element(qavx1_y.begin(), qavx1_y.end()) ) + 2);
 
                }
 ///
                else if( ui->speed_checkBox->isChecked() && !ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked()
                         && !qv_x.empty() && !qv_y.empty() && !qavx2_x.empty() && !qavx2_y.empty() )
                {
-                   ui->plot->xAxis->setRange( ( qv_x.first() < qavx2_x.first() ? qv_x.first() : qavx2_x.first() ) - 0.25, ( qv_x.last() > qavx2_x.last() ? qv_x.last() : qavx2_x.last() ) + 0.25);
+                   ui->plot->xAxis->setRange( ( qv_x.first() < qavx2_x.first() ? qv_x.first() : qavx2_x.first() ) - 2, ( qv_x.last() > qavx2_x.last() ? qv_x.last() : qavx2_x.last() ) + 2);
                    ui->plot->yAxis->setRange( ( *std::min_element(qv_y.begin(), qv_y.end()) < *std::min_element(qavx2_y.begin(), qavx2_y.end()) ?
-                                             *std::min_element(qv_y.begin(), qv_y.end()) : *std::min_element(qavx2_y.begin(), qavx2_y.end()) ) - 0.25,
+                                             *std::min_element(qv_y.begin(), qv_y.end()) : *std::min_element(qavx2_y.begin(), qavx2_y.end()) ) - 2,
 
                                              (*std::max_element(qv_y.begin(), qv_y.end()) > *std::max_element(qavx2_y.begin(), qavx2_y.end()) ?
-                                             *std::max_element(qv_y.begin(), qv_y.end()) : *std::max_element(qavx2_y.begin(), qavx2_y.end()) ) + 0.25);
+                                             *std::max_element(qv_y.begin(), qv_y.end()) : *std::max_element(qavx2_y.begin(), qavx2_y.end()) ) + 2);
 
                }
 ///
                else if( !ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked()
                         && !qavx1_x.empty() && !qavx1_y.empty() && !qavx2_x.empty() && !qavx2_y.empty() )
                {
-                   ui->plot->xAxis->setRange( ( qavx1_x.first() < qavx2_x.first() ? qavx1_x.first() : qavx2_x.first()) - 0.25, ( qavx1_x.last() > qavx2_x.last() ? qavx1_x.last() : qavx2_x.last()) + 0.25);
+                   ui->plot->xAxis->setRange( ( qavx1_x.first() < qavx2_x.first() ? qavx1_x.first() : qavx2_x.first()) - 2, ( qavx1_x.last() > qavx2_x.last() ? qavx1_x.last() : qavx2_x.last()) + 2);
                    ui->plot->yAxis->setRange((*std::min_element(qavx1_y.begin(), qavx1_y.end()) < *std::min_element(qavx2_y.begin(), qavx2_y.end()) ?
-                                             *std::min_element(qavx1_y.begin(), qavx1_y.end()) : *std::min_element(qavx2_y.begin(), qavx2_y.end()) ) - 0.25,
+                                             *std::min_element(qavx1_y.begin(), qavx1_y.end()) : *std::min_element(qavx2_y.begin(), qavx2_y.end()) ) - 2,
 
                                              (*std::max_element(qavx1_y.begin(), qavx1_y.end()) > *std::max_element(qavx2_y.begin(), qavx2_y.end()) ?
-                                             *std::max_element(qavx1_y.begin(), qavx1_y.end()) : *std::max_element(qavx2_y.begin(), qavx2_y.end())) + 0.25);
+                                             *std::max_element(qavx1_y.begin(), qavx1_y.end()) : *std::max_element(qavx2_y.begin(), qavx2_y.end())) + 2);
 
                }
 ////
                else if( ui->speed_checkBox->isChecked() && ui->A_vx_1_checkBox->isChecked() && ui->A_vx_2_checkBox->isChecked()
                        && !qv_x.empty() && !qv_y.empty() && !qavx1_x.empty() && !qavx1_y.empty() && !qavx2_x.empty() && !qavx2_y.empty() )
                {
-                   ui->plot->xAxis->setRange(std::min(std::min(qv_x.first(), qavx1_x.first()), qavx2_x.first()) - 0.25,
-                                             std::max(std::max(qv_x.last(), qavx1_x.last()), qavx2_x.last()) + 0.25);
+                   ui->plot->xAxis->setRange(std::min(std::min(qv_x.first(), qavx1_x.first()), qavx2_x.first()) - 2,
+                                             std::max(std::max(qv_x.last(), qavx1_x.last()), qavx2_x.last()) + 2);
 
                    ui->plot->yAxis->setRange(std::min(std::min(*std::min_element(qv_y.begin(), qv_y.end()),
                                                       *std::min_element(qavx2_y.begin(), qavx2_y.end())),
-                                                      *std::min_element(qavx2_y.begin(), qavx2_y.end()) ) - 0.25,
+                                                      *std::min_element(qavx2_y.begin(), qavx2_y.end()) ) - 2,
                                              std::max(std::max( *std::max_element(qv_y.begin(), qv_y.end()),
                                                       *std::max_element(qavx1_y.begin(), qavx1_y.end()) ),
-                                                      *std::max_element(qavx2_y.begin(), qavx2_y.end()) ) + 0.25 );
+                                                      *std::max_element(qavx2_y.begin(), qavx2_y.end()) ) + 2 );
 
                }
 ////
@@ -509,9 +498,47 @@ void awd::slot_for_new_point()
 
     }
 
-    graph_value[std::max(std::max( qv_x.last(), qavx1_x.last() ), qavx2_x.last())] = values;
-    values = {0,0,0};
 
+    if( qv_x.empty() && qavx1_x.empty() && qavx2_x.empty() ) // 000
+    {
+        values = {0,0,0};
+        graph_value[0] = values;
+    }
+
+    else if ( !qv_x.empty() && qavx1_x.empty() && qavx2_x.empty() ) // 001
+    {
+        graph_value[qv_x.last()] = values;
+    }
+    else if ( qv_x.empty() && !qavx1_x.empty() && qavx2_x.empty() ) // 010
+    {
+        graph_value[qavx1_x.last()] = values;
+    }
+    else if ( qv_x.empty() && qavx1_x.empty() && !qavx2_x.empty() ) // 100
+    {
+        graph_value[qavx2_x.last()] = values;
+    }
+    else if( !qv_x.empty() && qavx1_x.empty() && !qavx2_x.empty() ) // 011
+    {
+        graph_value[std::max( qv_x.last(), qavx2_x.last() )] = values;
+    }
+///
+    else if( !qv_x.empty() && !qavx1_x.empty() && qavx2_x.empty() )
+    {
+        graph_value[std::max( qv_x.last(), qavx1_x.last() )] = values;
+    }
+///
+    else if( qv_x.empty() && !qavx1_x.empty() && !qavx2_x.empty() )
+    {
+        graph_value[std::max( qavx2_x.last(), qavx1_x.last() )] = values;
+    }
+////
+    else if( !qv_x.empty() && !qavx1_x.empty() && !qavx2_x.empty() )
+    {
+        graph_value[std::max(std::max( qv_x.last(), qavx1_x.last() ), qavx2_x.last())] = values;
+    }
+
+
+        values = {0,0,0};
     }
 }
 
@@ -851,29 +878,25 @@ void awd::on_write_button_regime_clicked()
     command[3] = 0x00;
 
 //Data1
-    if(ui->SkipLim->isChecked()) /*mode_data1 |= 64*/ command[4] |= 64;
-    if(ui->LimDrop->isChecked()) /*mode_data1 |= 32*/ command[4] |= 32;
-    if(ui->StopDrop->isChecked()) /*mode_data1 |= 16*/ command[4] |= 16;
-    if(ui->IntrfEN->isChecked()) /*mode_data1 |= 8*/ command[4] |= 8;
-    if(ui->IntrfVal->isChecked()) /*mode_data1 |= 4*/ command[4] |= 4;
-    if(ui->IntrfDir->isChecked()) /*mode_data1 |= 2*/ command[4] |= 2;
-    if(ui->SrcParam->isChecked()) /*mode_data1 |= 1*/ command[4] |= 1;
+    if(ui->SkipLim->isChecked()) command[4] |= 64;
+    if(ui->LimDrop->isChecked()) command[4] |= 32;
+    if(ui->StopDrop->isChecked()) command[4] |= 16;
+    if(ui->IntrfEN->isChecked()) command[4] |= 8;
+    if(ui->IntrfVal->isChecked()) command[4] |= 4;
+    if(ui->IntrfDir->isChecked()) command[4] |= 2;
+    if(ui->SrcParam->isChecked()) command[4] |= 1;
 //Data0
-    if(ui->comboBox_mode->currentText() == "Стабилизация скор.по ЭДС") /*mode_data0 |= 0*/ command[5] |= 0;
-    if(ui->comboBox_mode->currentText() == "Стабилизация скор.по энкодеру") /*mode_data0 |= 1*/ command[5] |= 1;
-    if(ui->comboBox_mode->currentText() == "Слежение за внешним сигналом")/*mode_data0 |= 2*/ command[5] |= 2;
-    if(ui->comboBox_mode->currentText() == "Ограничение момента") /*mode_data0 |= 3*/ command[5] |= 3;
+    if(ui->comboBox_mode->currentText() == "Стабилизация скор.по ЭДС") command[5] |= 0;
+    if(ui->comboBox_mode->currentText() == "Стабилизация скор.по энкодеру") command[5] |= 1;
+    if(ui->comboBox_mode->currentText() == "Слежение за внешним сигналом") command[5] |= 2;
+    if(ui->comboBox_mode->currentText() == "Ограничение момента") command[5] |= 3;
 
-    //command[4] = mode_data1;
-    //command[5] = mode_data0;
     command[6] = 0x00;
     command[7] = checkSumm(command);
 
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
     ///////////////
 //обнуление для следующего запуска
-    //mode_data0 = 0;
-    //mode_data1 = 0;
     command[4] = 0;
     command[5] = 0;
 }
@@ -904,22 +927,6 @@ void awd::on_start_tracking_clicked()
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
 }
 
-/*
-void awd::on_speed_horizontalSlider_valueChanged(int value)
-{
-    command[1] = 0x4b;
-    command[2] = 0x08;
-    command[3] = 0x00;
-    command[4] = (value >> 8) & 0xFF;
-    command[5] = value & 0xFF;
-    command[6] = 0x00;
-    command[7] = checkSumm(command);//вычисление контрольной суммы
-
-    ui->speed_spinBox->setValue(value);
-
-    writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
-}
-*/
 
 void awd::on_speed_spinBox_editingFinished()
 {
@@ -950,10 +957,6 @@ void awd::on_stop_button_clicked()
     ui->speed_spinBox->setValue(0);
     ui->speed_horizontalSlider->setValue(0);
 
-    //ui->A_vx_1_checkBox->setChecked(0);
-    //ui->A_vx_2_checkBox->setChecked(0);
-    //ui->speed_checkBox->setChecked(0);
-
     command[7] = 0x00;
 }
 
@@ -979,14 +982,12 @@ void awd::plot_settings()
     ui->plot->setInteraction(QCP::iRangeZoom, true);// взвимодействие перетаскивания графика
 
     ui->plot->addGraph();
-    //ui->plot->graph(0)->setScatterStyle(QCPScatterStyle::ssDisc);
     ui->plot->graph(0)->setPen(QPen(QColor(0, 255, 127)));
 
     ui->plot->addGraph();
-    //ui->plot->graph(1)->setScatterStyle(QCPScatterStyle::ssDisc);
     ui->plot->graph(1)->setPen(QPen(QColor(255, 0, 0)));
+
     ui->plot->addGraph();
-    //ui->plot->graph(2)->setScatterStyle(QCPScatterStyle::ssDisc);
     ui->plot->graph(2)->setPen(QPen(QColor(100, 0, 170)));
 
     QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
@@ -999,18 +1000,31 @@ void awd::plot_settings()
 void awd::on_btn_clear_clicked()
 {
     //clearData
-    ui->speed_checkBox->setChecked(0);
-    ui->A_vx_1_checkBox->setChecked(0);
-    ui->A_vx_2_checkBox->setChecked(0);
 
-    qv_x.clear();
-    qv_y.clear();
+    if( !qv_x.empty() && !qv_y.empty() )
+    {
+        qv_x.clear();
+        qv_y.clear();
+    }
 
-    qavx1_x.clear();
-    qavx1_y.clear();
 
-    qavx2_x.clear();
-    qavx2_y.clear();
+    if( !qavx1_x.empty() && !qavx1_y.empty() )
+    {
+        qavx1_x.clear();
+        qavx1_y.clear();
+    }
+
+    if( !qavx2_x.empty() && !qavx2_y.empty() )
+    {
+        qavx2_x.clear();
+        qavx2_y.clear();
+    }
+
+    if(!graph_value.empty())
+    {
+        graph_value.clear();
+    }
+
     // plot
     ui->plot->graph(0)->setData(qv_x, qv_y);
     ui->plot->graph(1)->setData(qavx1_x, qavx1_y);
@@ -1018,6 +1032,8 @@ void awd::on_btn_clear_clicked()
 
     ui->plot->replot();
     ui->plot->update();
+
+    time.start(); // старт времени графика
 
 }
 
@@ -1277,8 +1293,6 @@ void awd::on_spinBox_period_editingFinished()
 
 void awd::on_export_button_clicked()
 {
-
-    //QFile file(".//graph_value.txt");
     QFile file(QFileDialog::getSaveFileName(this,  "Save file", "С:://", tr("Text files (*.txt)")));
 
     if(!file.open(QFile::WriteOnly | QFile::Text))
@@ -1292,38 +1306,17 @@ void awd::on_export_button_clicked()
 
     for (const auto& item : graph_value)
     {
-        out << item.first << "\t\t";
+        QString str = QString::number(item.first);
+        std::replace(str.begin(), str.end(), '.', ',');
+        out << str << "\t\t ";
+
         for (const double& stop : item.second)
         {
-            QString str = QString::number(stop);
-            std::replace(str.begin(), str.end(), '.', ',');
-            out << str << "\t\t ";
-            //out << stop << "\t\t ";
+            out << stop << "\t\t ";
         }
         out << "\t\n";
     }
 
-/*
-    out << "ADC_1\t\t" << "ADC_2\t\t" << "Speed\t\n";
-
-    for(int i = 0; i < std::max(std::max(qavx1_x.size(), qavx2_x.size()), qv_x.size()); i++)
-    {
-       if( i < qavx1_x.size() ){
-           out << qavx1_x[i] << "\t  " << qavx1_y[i] << "\t";
-       }
-       else out <<"0\t";
-
-       if( i < qavx2_x.size() ){
-           out << qavx2_x[i] << "\t  " << qavx2_y[i] << "\t";
-       }
-       else out <<"0\t";
-
-       if( i < qv_x.size() ){
-           out << qv_x[i] << "\t  " << qv_y[i] << "\t\n";
-       }
-       else out <<"\n";
-    }
-*/
 
     file.flush();
     file.close();
@@ -1354,7 +1347,7 @@ void awd::on_address_edit_editingFinished()
         ui->scrollArea_2->setEnabled(1);
         ui->scrollAreaWidgetContents_2->setEnabled(1);
         ui->speed_horizontalSlider->setEnabled(1);
-        ui->export_button->setEnabled(0);
+        ui->status_checkBox->setEnabled(1);
 
         ui->address_edit->setEnabled(0);
     }
@@ -1408,10 +1401,10 @@ void awd::on_read_pid_clicked()
     command[1] = 0x87;
     command[2] = 0x0F;
     command[3] = 0x00;
-    command[4] = 0x00;/*(ui->Kp->value() >> 8) & 0xFF;*/
-    command[5] = 0x00;/*ui->Kp->value() & 0xFF;*/
+    command[4] = 0x00;
+    command[5] = 0x00;
     command[6] = 0x00;
-    command[7] = checkSumm(command); //вычисление контрольной суммы
+    command[7] = checkSumm(command);
 
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
 
@@ -1419,10 +1412,10 @@ void awd::on_read_pid_clicked()
     command[1] = 0x87;
     command[2] = 0x10;
     command[3] = 0x00;
-    command[4] = 0x00; /*(ui->Ki->value() >> 8) & 0xFF;*/
-    command[5] = 0x00; /*ui->Ki->value() & 0xFF;*/
+    command[4] = 0x00;
+    command[5] = 0x00;
     command[6] = 0x00;
-    command[7] = checkSumm(command);//вычисление контрольной суммы
+    command[7] = checkSumm(command);
 
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
 
@@ -1430,10 +1423,10 @@ void awd::on_read_pid_clicked()
     command[1] = 0x87;
     command[2] = 0x11;
     command[3] = 0x00;
-    command[4] = 0x00; /*(ui->Kd->value() >> 8) & 0xFF;*/
-    command[5] = 0x00; /*ui->Kd->value() & 0xFF;*/
+    command[4] = 0x00;
+    command[5] = 0x00;
     command[6] = 0x00;
-    command[7] = checkSumm(command);//вычисление контрольной суммы
+    command[7] = checkSumm(command);
 
     writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
 }
@@ -1532,33 +1525,26 @@ void awd::speed_SliderValueChanged(int value)
         command[4] = (value >> 8) & 0xFF;
         command[5] = value & 0xFF;
         command[6] = 0x00;
-        command[7] = checkSumm(command);//вычисление контрольной суммы
+        command[7] = checkSumm(command);
 
         ui->speed_spinBox->setValue(value);
 
         writeData((QByteArray::fromRawData((const char*)command, sizeof (command))));
 }
 
-void awd::on_start_stop_session_clicked()
+void awd::on_start_session_clicked()
 {
-    if(chek){
-        // график идет
-        ui->start_stop_session->setText("Останоыка");
-        chek = true;
+    chek = true;
+    ui->A_vx_1_checkBox->setEnabled(0);
+    ui->A_vx_2_checkBox->setEnabled(0);
+    ui->speed_checkBox->setEnabled(0);
+}
 
-        ui->A_vx_1_checkBox->setEnabled(0);
-        ui->A_vx_2_checkBox->setEnabled(0);
-        ui->speed_checkBox->setEnabled(0);
-        ui->export_button->setEnabled(1);
-    }
-    else{
-        // график остановка
-        ui->start_stop_session->setText("Запуск");
-        chek = false;
+void awd::on_stop_session_clicked()
+{
+    chek = false;
 
-        ui->A_vx_1_checkBox->setEnabled(1);
-        ui->A_vx_2_checkBox->setEnabled(1);
-        ui->speed_checkBox->setEnabled(1);
-        ui->export_button->setEnabled(0);
-    }
+    ui->A_vx_1_checkBox->setEnabled(1);
+    ui->A_vx_2_checkBox->setEnabled(1);
+    ui->speed_checkBox->setEnabled(1);
 }
